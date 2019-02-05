@@ -25,15 +25,17 @@ class Stacking(object) :
         self.weak_classifiers = weak_classifiers
         new_dataset = pd.DataFrame()
         
+        print('Fitting weak classifiers')
         for j in range(len(self.weak_classifiers)) : 
             
             if progress_bar :
                 progressBar(j,self.nb_clfs)
                 
             self.weak_classifiers[j].fit(train,train_labels['end_of_day_return'])
-            new_dataset[j] = self.weak_classifiers[j].predict_proba(train)
+            new_dataset[j] = self.weak_classifiers[j].predict_proba(train)[:,0]
 
                 
+        print('Fitting the meta-classifier')
         if meta_classifier == 'LogisticRegression' :
             
             self.meta_clf = LogisticRegression(C = 1)
@@ -64,7 +66,7 @@ class Stacking(object) :
         for j in range(len(self.weak_classifier)) :
             if self.progress_bar :
                 progressBar(j,self.nb_clfs)
-            new_X[j] = self.weak_classifiers[j].predict_proba(X)
+            new_X[j] = self.weak_classifiers[j].predict_proba(X)[:,0]
         predicted_labels['end_of_day_return'] = self.meta_clf.predict(new_X)    
         
         return predicted_labels
@@ -81,10 +83,57 @@ class Stacking(object) :
         for j in range(len(self.weak_classifier)) :
             if self.progress_bar :
                 progressBar(j,self.nb_clfs)
-            new_X[j] = self.weak_classifiers[j].predict_proba(X)   
+            new_X[j] = self.weak_classifiers[j].predict_proba(X)[:,0]  
         
         return self.meta_clf.score(new_X,y['end_of_day_return'])
 
 class Averaging(object) :
-    def __init__(self):
-        pass
+    
+    def __init__(self,train,train_labels,base_classifiers = [],weights = [], progress_bar = True):
+        
+        if len(weights) == 0:
+            self.weights = np.ones(len(base_classifiers))/len(base_classifiers)
+        else :
+            self.weights = weights
+        
+        self.base_classifiers = base_classifiers
+        self.progress_bar = progress_bar
+        print('Fitting base classifiers')
+        for j in range(len(self.base_classifiers)) :
+            if self.progress_bar :
+                progressBar(j,len(self.weights))
+            self.base_classifiers[j].fit(train,train_labels)
+        
+    def predict(self,X) :
+        predicted_proba = []
+        for j in range(len(self.base_classifiers)) :
+            predicted_proba.append(self.base_classifiers[j].predict_proba(X)[:,0])
+        predicted_proba = np.array(predicted_proba)
+        final_proba = 0
+        for j in range(len(self.base_classifiers)) :
+            final_proba = final_proba + self.weights[j]*predicted_proba[j]
+        predicted_labels = final_proba[final_proba < 0.5]
+        
+        df = pd.DataFrame()
+        df['ID'] = X['ID']
+        df['end_of_day_return'] = predicted_labels
+        
+        return predicted_labels
+    
+    def score(self,X,y) :
+                    
+        predicted_proba = []
+        for j in range(len(self.base_classifiers)) :
+            predicted_proba.append(self.base_classifiers[j].predict_proba(X)[:,0])
+        predicted_proba = np.array(predicted_proba)
+        final_proba = 0
+        for j in range(len(self.base_classifiers)) :
+            final_proba = final_proba + self.weights[j]*predicted_proba[j]
+        predicted_labels = final_proba[final_proba < 0.5]
+        
+        accuracy = np.mean(predicted_labels == y['end_of_day_return'])
+        
+        return accuracy
+            
+        
+        
