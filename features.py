@@ -3,7 +3,7 @@ import numpy as np
 
 
 # Extract features from data
-def add_features(data):
+def add_features(data,eps = 10**-10):
     # Get usefull columns (data from different hours)
     return_cols = [col for col in data.columns if col.endswith(':00')]
 
@@ -34,8 +34,8 @@ def add_features(data):
     
     data['difference_to_market'] = data['15:20:00'] - data['avg_market_return_date']
     data['return_trend'] = data['15:20:00'] - data['09:30:00']
-    data['log_vol_difference_to_market'] = np.log(np.abs(data['15:20:00'])) - data['avg_market_log_vol_date']
-    data['log_vol_trend'] = np.log(np.abs(data['15:20:00'])) - np.log(np.abs(data['09:30:00']))
+    data['log_vol_difference_to_market'] = np.log(np.abs(np.max(data['15:20:00'],eps))) - data['avg_market_log_vol_date']
+    data['log_vol_trend'] = np.log(np.abs(np.max(data['15:20:00'],eps))) - np.log(np.abs(np.max(data['09:30:00'],eps)))
     
    
 
