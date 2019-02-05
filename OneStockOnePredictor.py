@@ -35,7 +35,7 @@ class OneStockOnePredictor(object) :
             data_code = train[train['eqt_code']==code].sort_values(by = 'ID')
             labels = data_code['end_of_day_return']
             
-            data_code = data_code.drop(['end_of_day_return','ID'],axis =1)
+            data_code = data_code.drop(['eqt_code','end_of_day_return','ID'],axis =1)
             
             if np.sum(labels == 1) > 0 and np.sum(labels == 0) > 0 :
                 
@@ -69,9 +69,7 @@ class OneStockOnePredictor(object) :
         
         cols = [col for col in X.columns if not col.endswith(':00')]
         X = X[cols]
-        predicted_labels = pd.DataFrame()
-        predicted_labels['ID'] = X['ID']
-        predicted_labels['end_of_day_return'] = np.zeros(len(X['ID']),dtype = 'int')
+        predicted_labels = pd.DataFrame(columns = ['ID','end_of_day_return'])
         eqt_code = X['eqt_code'].unique()
         stocks_done = 0
         nb_stocks = len(eqt_code)
@@ -80,12 +78,16 @@ class OneStockOnePredictor(object) :
             if self.progress_bar :
                 progressBar(stocks_done,nb_stocks)
             data_code = X[X['eqt_code']==code].sort_values(by = 'ID')
-            ids = data_code['ID'].unique()
-            data_code = data_code.drop(['ID'],axis =1)
+            temp = pd.DataFrame()
+            temp['ID'] = data_code['ID']
+            data_code = data_code.drop(['ID','eqt_code'],axis =1)
             label = self.predictors[code].predict(data_code)
-            for j in range(len(ids)) : 
-                predicted_labels.loc[predicted_labels['ID'] == ids[j], 'end_of_day_return'] = label[j]
+            temp['end_of_day_return'] = label
+            predicted_labels = predicted_labels.append(temp)
             stocks_done +=1
+        
+        predicted_labels.sort_values(by = 'ID')
+        
         return predicted_labels
     
     
@@ -106,7 +108,7 @@ class OneStockOnePredictor(object) :
                 progressBar(stocks_done,nb_stocks)
             data_code = X[X['eqt_code']==code].sort_values(by = 'ID')
             labels = data_code['end_of_day_return']
-            data_code = data_code.drop(['end_of_day_return','ID'],axis =1)
+            data_code = data_code.drop(['end_of_day_return','ID','eqt_code'],axis =1)
             self.accuracy[code] = self.predictors[code].score(data_code,labels)
             stocks_done +=1
         
