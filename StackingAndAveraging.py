@@ -15,7 +15,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 
 class Stacking(object) :
-    def __init__(self,train, train_labels, weak_classifiers = [], meta_classifier = "LogisticRegression",progress_bar = True) :
+    def __init__(self,train, train_labels, weak_classifiers = [], meta_classifier = "LogisticRegression",progress_bar = False) :
         
         cols = [col for col in train.columns if not col.endswith(':00')]
         train = train[cols]
@@ -38,18 +38,18 @@ class Stacking(object) :
         print('Fitting the meta-classifier')
         if meta_classifier == 'LogisticRegression' :
             
-            self.meta_clf = LogisticRegression(C = 1)
-            self.meta_clf.fit(new_dataset,train_labels)
+            self.meta_clf = LogisticRegression(C = 1,solver = 'lbfgs',max_iter = 1000)
+            self.meta_clf.fit(new_dataset,train_labels['end_of_day_return'])
             
         elif meta_classifier == 'SVM' :
             
             self.meta_clf = SVC(C = 1)
-            self.meta_clf.fit(new_dataset,train_labels)
+            self.meta_clf.fit(new_dataset,train_labels['end_of_day_return'])
             
         elif meta_classifier == 'KNN' :
             
             self.meta_clf = SVC(C = 1)
-            self.meta_clf.fit(new_dataset,train_labels)
+            self.meta_clf.fit(new_dataset,train_labels['end_of_day_return'])
             
         else : 
             print('Error Classifier')
@@ -89,7 +89,7 @@ class Stacking(object) :
 
 class Averaging(object) :
     
-    def __init__(self,train,train_labels,base_classifiers = [],weights = [], progress_bar = True):
+    def __init__(self,train,train_labels,base_classifiers = [],weights = [], progress_bar = False):
         
         if len(weights) == 0:
             self.weights = np.ones(len(base_classifiers))/len(base_classifiers)
@@ -102,7 +102,7 @@ class Averaging(object) :
         for j in range(len(self.base_classifiers)) :
             if self.progress_bar :
                 progressBar(j,len(self.weights))
-            self.base_classifiers[j].fit(train,train_labels)
+            self.base_classifiers[j].fit(train,train_labels['end_of_day_return'])
         
     def predict(self,X) :
         predicted_proba = []
