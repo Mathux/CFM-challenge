@@ -1,7 +1,5 @@
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import seaborn as sns
 
 
 # Extract features from data
@@ -76,18 +74,8 @@ def group_by_product_countd(all_data,return_cols):
     return all_data
 
 
-def plot_corr(df,size=10):    
+def plot_corr(df,size=10):
+    import seaborn as sns
+    import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(size,size))
     sns.heatmap(df.corr(), annot=True)
-
-
-if __name__ == '__main__':
-    import utils
-    # Load data
-    X_train,X_test,y_train,y_train_labels = utils.load_data()
-
-    # Add features (inplace)
-    add_features(X_train)
-    add_features(X_test)
-
-    train_data = utils.split_dataset()
