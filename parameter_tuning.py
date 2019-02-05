@@ -20,7 +20,7 @@ add_features(X_test)
 cols_to_use = [c for c in X_train.columns if not c.endswith(':00')]
 X_train,X_test = X_train[cols_to_use],X_test[cols_to_use]
 
-train, test, train_labels, test_labels = (X_train, y_train_labels, test_size=0.10, random_state=42)
+train, test, train_labels, test_labels = split_dataset(X_train, y_train_labels)
 
 param_test ={'C': sp_uniform(loc = 1,scale = 10)}
 n_HP_points_to_test = 20
