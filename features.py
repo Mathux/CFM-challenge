@@ -17,6 +17,8 @@ def add_features(data):
     data['skew_return_date_eqt'] = data[return_cols].skew(axis = 1)
     data['kurt_return_date_eqt'] = data[return_cols].kurt(axis = 1)
     data['max_drawdown_date_eqt'] = data[return_cols].max(axis = 1) - data[return_cols].min(axis = 1)
+    data['avg_log_vol_date_eqt'] = np.log(np.abs(data[return_cols])).mean(axis = 1)
+    data['var_log_vol_date_eqt'] = np.log(np.abs(data[return_cols])).var(axis = 1)
     
     data = group_by_date_countd(data,return_cols)
     data = group_by_product_countd(data,return_cols)
@@ -32,6 +34,10 @@ def add_features(data):
     data = data.drop(return_cols,axis = 1)
     new_returns_cols = return_cols[::7]
     data[new_returns_cols] = df_train
+    
+    data['difference_to_market'] = data['15:20:00'] - data['avg_market_return_date']
+    data['return_trend'] = data['15:20:00'] - data['09:30::00']
+    
    
 
 
