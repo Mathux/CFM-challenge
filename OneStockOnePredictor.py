@@ -8,20 +8,15 @@ Created on Fri Jan 25 16:31:54 2019
 
 import numpy as np
 import pandas as pd
-from data_exploration import submission,progressBar
+from utils import submission, progressBar
 from sklearn.linear_model import LogisticRegression
 from sklearn.dummy import DummyClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 
 
-    
-
 class OneStockOnePredictor(object) :
-    
     def __init__(self,train,train_labels,C = 1,progress_bar = False, classifier = 'LogisticRegression') :
-        
-        
         cols = [col for col in train.columns if not col.endswith(':00')]
         train = train[cols]
         eqt_code = train['eqt_code'].unique()
@@ -116,9 +111,3 @@ class OneStockOnePredictor(object) :
             stocks_done +=1
         
         return self.accuracy
-        
-        
- #%%       
-    
-
-        
