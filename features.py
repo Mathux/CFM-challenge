@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import utils
+import numpy as np
+import seaborn as sns
 
 
 # Extract features from data
@@ -14,21 +16,23 @@ def add_features(data):
     data['var_return_date_eqt'] = data[return_cols].var(axis = 1)
     data['skew_return_date_eqt'] = data[return_cols].skew(axis = 1)
     data['kurt_return_date_eqt'] = data[return_cols].kurt(axis = 1)
+    data['max_drawdown_date_eqt'] = data[return_cols].max(axis = 1) - data[return_cols].min(axis = 1)
     
     data = group_by_date_countd(data,return_cols)
     data = group_by_product_countd(data,return_cols)
-    data['tot_return_eqt_date'] = data[return_cols].sum(axis = 1)
-
-
-    # Creation of the market feature
-    stock_correlation_data = market_correlation(data)
-    stock_correlation_data = stock_correlation_data.replace(to_replace = 1.0, value = 0)
     
-    temp_data = (data.groupby('eqt_code')['tot_return_eqt_date'].mean()*stock_correlation_data/stock_correlation_data.sum(axis = 1)).sum()
+    data['09:30:00'].fillna(0,inplace = True)
+    data[return_cols] = data[return_cols].interpolate(axis=1)
     
-    data.set_index(['eqt_code'],inplace = True)
-    data['market_feature'] = temp_data
-    data.reset_index(inplace = True)
+    data[return_cols] = data[return_cols].ewm(alpha = 0.2,axis = 1).mean()
+
+    returns = data[return_cols]
+    df_train = pd.DataFrame(np.add.reduceat(returns.values, np.arange(len(returns.columns))[::7], axis=1))
+    df_train.columns = returns.columns[::7]
+    data = data.drop(return_cols,axis = 1)
+    new_returns_cols = return_cols[::7]
+    data[new_returns_cols] = df_train
+   
 
 
 def group_by_date_countd(all_data,return_cols):
@@ -57,25 +61,10 @@ def group_by_product_countd(all_data,return_cols):
     return all_data
 
 
-def market_correlation(data):
-    df = pd.pivot_table(data[['date','eqt_code','tot_return_eqt_date']], values='tot_return_eqt_date', index=['date'],columns=['eqt_code'])
-    corr = df.corr()
-    corr = corr.fillna(0)
-    return corr
-
-
 def plot_corr(df,size=10):
-    '''Function plots a graphical correlation matrix for each pair of columns in the dataframe.
-
-    Input:
-        df: pandas DataFrame
-        size: vertical and horizontal size of the plot'''
-
-    corr = df.corr()
-    fig, ax = plt.subplots(figsize=(size, size))
-    ax.matshow(corr)
-    plt.xticks(range(len(corr.columns)), corr.columns);
-    plt.yticks(range(len(corr.columns)), corr.columns);
+    
+    fig, ax = plt.subplots(figsize=(size,size))
+    sns.heatmap(df.corr(), annot=True)
 
 
 if __name__ == '__main__':
