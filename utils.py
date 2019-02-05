@@ -10,7 +10,7 @@ import pandas as pd
 from config import *
 
 # Load train and test data
-def load_data() : 
+def load_data(): 
     X_train = pd.read_csv(path_to_train)
     y_train = pd.read_csv(path_to_train_returns,sep = ',')
     X_test = pd.read_csv(path_to_test)
