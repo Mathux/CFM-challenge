@@ -23,8 +23,10 @@ def load_data():
 
 
 # Split the train dataset into training and validation (keep different date)
-def split_dataset(data, split_val=0.1, seed=SEED):
+def split_dataset(data,labels, split_val=0.1, seed=SEED):
     np.random.seed(seed)
+    
+    data = data.merge(labels, on = 'ID')
 
     dates = data["date"].unique().copy()
     n_dates = len(dates)
@@ -37,7 +39,13 @@ def split_dataset(data, split_val=0.1, seed=SEED):
     train = data[data["date"].isin(dates[train_index])]
     val = data[data["date"].isin(dates[val_index])]
     
-    return train, val
+    train_labels = train['end_of_day_return']
+    test_labels = val['end_of_day_return']
+    
+    train = train.drop('end_of_day_return',axis = 1)
+    val = val.drop('end_of_day_return',axis = 1)
+    
+    return train, val, train_labels, test_labels
 
 
 # Tools to give the csv format
