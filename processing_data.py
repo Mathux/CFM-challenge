@@ -9,7 +9,7 @@ class Dataset:
         self.labels = labels
 
 class Data:
-    def __init__(self, split_val=0.1, scaler = 'StandardScaler', seed=SEED, verbose=False):
+    def __init__(self, split_val=0.1, scaler = None, seed=SEED, verbose=False):
 
         if verbose:
             print("Loading of the train dataset...")
@@ -24,8 +24,8 @@ class Data:
             print("Test dataset loaded!")
             print("Add features...")
             
-        features.add_features(self.x)
-        features.add_features(self.x_test)
+        #features.add_features(self.x)
+        #features.add_features(self.x_test)
         
         if not scaler is None :
             
