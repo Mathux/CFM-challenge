@@ -24,8 +24,8 @@ class Data:
             print("Test dataset loaded!")
             print("Add features...")
             
-        #features.add_features(self.x)
-        #features.add_features(self.x_test)
+        features.add_features(self.x)
+        features.add_features(self.x_test)
         
         if not scaler is None :
             

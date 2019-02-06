@@ -47,11 +47,13 @@ class EqtEmbedding():
         self.embeddings = {}
         for i in range(1) :
             print('Fitting equity : ', self.eqt_code[i])
-            self.model = self.create_model(opti,loss)
-            self.history = self.model.fit(self.train.data[i], self.train.labels[i], batch_size=batch_size, validation_data=(self.val.data[i], self.val.labels[i]), epochs=epochs,verbose = 1)
-            layer_output = K.function([self.model.layers[0].input],
-                                  [self.model.layers[0].output])
+            model = self.create_model(opti,loss)
+            self.history = model.fit(self.train.data[i], self.train.labels[i], batch_size=batch_size, validation_data=(self.val.data[i], self.val.labels[i]), epochs=epochs,verbose = 1)
+            layer_output = K.function([model.layers[0].input],
+                                  [model.layers[0].output])
             self.embeddings[self.eqt_code[i]] = layer_output([self.train.data[i]])[0]
+            
+      
 
     # Save the weights
     def save_weight(self, name):
@@ -76,7 +78,7 @@ class EqtEmbedding():
         n = len(eqt_codes)
 
         processed_vector = np.zeros((n, maxvalue, len(return_cols)-2), dtype='float64')
-        processed_labels = np.zeros((n, maxvalue,2), dtype=np.int64)
+        processed_labels = np.zeros((n, maxvalue), dtype=np.int64)
         
         # For each eqt, process it
         for i in range(n):
@@ -105,16 +107,11 @@ class EqtEmbedding():
             ## Fill the large vector
             processed_vector[i] = final_vector
             
-            final_labels = to_categorical(final_labels)
+            #final_labels = to_categorical(final_labels)
             processed_labels[i] = final_labels
         
         return processed_vector, processed_labels
         
-    
-    def print_model(self):
-        print(self.model.summary())
-
-
 # Some tests with a very basic embedding, it didn't care about the temporality
 class NaiveEmbedding(EqtEmbedding):
     def __init__(self, data, outputdim=300, opti="adam", lr=0.1, loss="binary_crossentropy", verbose=False):
@@ -124,9 +121,9 @@ class NaiveEmbedding(EqtEmbedding):
     def create_model(self, opti, loss):
         
         model = Sequential()
-        model.add(Dense(self.outputdim, activation='relu',input_shape=(self.n_hours,)))
+        model.add(Dense(self.outputdim,input_dim=self.n_hours))
         # Now we have the embedding, continue to learn
-        model.add(Dense(2, activation='softmax'))
+        model.add(Dense(1, activation='sigmoid'))
         model.compile(optimizer=opti, loss=loss, metrics=['acc'])
         
         return model
