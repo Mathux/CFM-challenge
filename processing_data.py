@@ -1,6 +1,7 @@
 import utils
 import features
 from config import *
+from sklearn.preprocessing import StandardScaler
 
 class Dataset:
     def __init__(self, data, labels):
@@ -8,7 +9,7 @@ class Dataset:
         self.labels = labels
 
 class Data:
-    def __init__(self, split_val=0.1, seed=SEED, verbose=False):
+    def __init__(self, split_val=0.1, scaler = 'StandardScaler', seed=SEED, verbose=False):
 
         if verbose:
             print("Loading of the train dataset...")
@@ -25,6 +26,14 @@ class Data:
             
         features.add_features(self.x)
         features.add_features(self.x_test)
+        
+        if not scaler is None :
+            
+            if scaler == 'StandardScaler' :
+                
+                self.x.iloc[:,75::] = StandardScaler().fit_transform(self.x.iloc[:,75::])
+                self.x_test.iloc[:,75::] = StandardScaler().fit_transform(self.x_test.iloc[:,75::])
+            
         if verbose:
             print("Features added!")
             print("Split the dataset...")
