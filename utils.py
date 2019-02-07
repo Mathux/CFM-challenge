@@ -76,9 +76,9 @@ def split_dataset(data, labels, split_val=0.1, seed=SEED):
 
 
 # Tools to give the csv format
-def submission(prediction, df = False, ID = None) :  
+def submission(prediction, ID = None) :  
     
-    if df :
+    if isinstance(prediction,pd.core.frame.DataFrame) :
         prediction.to_csv('predictions.csv', index=False)
     else : 
         pred = pd.DataFrame()
