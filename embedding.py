@@ -43,10 +43,10 @@ class EqtEmbedding():
 #                                      validation_data=(self.val.data[i], self.val.labels[i]), epochs=epochs,verbose = 1)
 #        
     # Return the embedding
-    def transform(self, opti, loss, batch_size = 32, epochs = 5):
+    def transform(self, opti, loss, batch_size = 32, epochs = 20):
         self.embeddings = {}
-        for i in range(1) :
-            print('Fitting equity : ', self.eqt_code[i])
+        for i in range(self.n_eqt) :
+            print('Fitting equity : ', self.eqt_code[i], '({}/{})'.format(i,self.n_eqt))
             model = self.create_model(opti,loss)
             self.history = model.fit(self.train.data[i], self.train.labels[i], batch_size=batch_size, validation_data=(self.val.data[i], self.val.labels[i]), epochs=epochs,verbose = 1)
             layer_output = K.function([model.layers[0].input],
