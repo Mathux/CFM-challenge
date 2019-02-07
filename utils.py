@@ -11,11 +11,31 @@ from config import *
 import numpy as np
 import sys
 
-# Load train data
-def load_train():
-    x_train = pd.read_csv(path_to_train)
-    y_train = pd.read_csv(path_to_train_returns,sep = ',')
 
+# Create a small dataset
+def create_small_dataset():
+    paths = [path_to_test, path_to_train, path_to_train_returns]
+    paths_small = [path_to_test_small, path_to_train_small, path_to_train_returns_small]
+    
+    ntrain = 5000
+    ntest = 1000
+    numbers = [ntest, ntrain, ntrain]
+    
+    for path, path_small, number in zip(paths, paths_small, numbers):
+        data = pd.read_csv(path)
+        data = data.head(number)
+        with open(path_small, "w") as f:
+            f.write(data.to_csv())
+        
+    
+# Load train data
+def load_train(small=False):
+    trainPath = path_to_train_small if small else path_to_train
+    trainPathReturns = path_to_train_returns_small if small else path_to_train_returns
+    
+    x_train = pd.read_csv(trainPath)
+    y_train = pd.read_csv(trainPathReturns, sep = ',')
+        
     y_train_labels = y_train.copy()
     y_train_labels['end_of_day_return'] = 1*(y_train['end_of_day_return']>=0)
         
@@ -23,8 +43,9 @@ def load_train():
 
 
 # Load test data
-def load_test():
-    x_test = pd.read_csv(path_to_test)
+def load_test(small=False):
+    testPath = path_to_test_small if small else path_to_test
+    x_test = pd.read_csv(testPath)    
     return x_test
 
 
@@ -67,3 +88,8 @@ def progressBar(value, endvalue, bar_length=50):
 
     sys.stdout.write("\n Progress: [{0}] {1}%".format(arrow + spaces, int(round(percent * 100))))
     sys.stdout.flush()
+
+
+if __name__ == "__main__":
+    create_small_dataset()
+    

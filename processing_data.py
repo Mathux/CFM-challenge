@@ -1,6 +1,7 @@
 import utils
 import features
 from config import *
+
 from sklearn.preprocessing import StandardScaler
 
 class Dataset:
@@ -9,17 +10,19 @@ class Dataset:
         self.labels = labels
 
 class Data:
-    def __init__(self, split_val=0.1, scaler = None, seed=SEED, verbose=False):
-
+    def __init__(self, split_val=0.1, scaler = None, seed=SEED, verbose=False, small=False):
+        if small:
+            print("Warning! Using small datasets..")
+            
         if verbose:
             print("Loading of the train dataset...")
         
-        self.x, self.y, self.labels = utils.load_train()
+        self.x, self.y, self.labels = utils.load_train(small)
         if verbose:
             print("Train dataset loaded!")
             print("Loading of the test dataset...")
             
-        self.x_test = utils.load_test()
+        self.x_test = utils.load_test(small)
         if verbose:
             print("Test dataset loaded!")
             print("Add features...")
@@ -27,10 +30,8 @@ class Data:
         features.add_features(self.x)
         features.add_features(self.x_test)
         
-        if not scaler is None :
-            
+        if not scaler is None :            
             if scaler == 'StandardScaler' :
-                
                 self.x.iloc[:,75::] = StandardScaler().fit_transform(self.x.iloc[:,75::])
                 self.x_test.iloc[:,75::] = StandardScaler().fit_transform(self.x_test.iloc[:,75::])
             
@@ -54,4 +55,4 @@ class Data:
 
 
 if __name__ == '__main__':
-    data = Data(verbose=True)
+    data = Data(small=True, verbose=True)

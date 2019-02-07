@@ -36,9 +36,9 @@ def add_features(data,eps = 10**-10):
     data['return_trend'] = data['15:20:00'] - data['09:30:00']
     data['log_vol_difference_to_market'] = np.log(np.abs(data['15:20:00']+eps)) - data['avg_market_log_vol_date']
     data['log_vol_trend'] = np.log(np.abs(data['15:20:00']+eps)) - np.log(np.abs(data['09:30:00']+eps))
+
     
    
-
 
 def group_by_date_countd(all_data,return_cols):
     groupby_col = "date"
