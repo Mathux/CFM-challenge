@@ -14,7 +14,7 @@ from scipy.stats import uniform as sp_uniform
 
 from processing_data import Data
 
-data = Data(small=True, verbose=True)
+data = Data(verbose=True)
 
 train_labels = data.train.labels['end_of_day_return']
 val_labels = data.val.labels['end_of_day_return']
