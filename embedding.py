@@ -48,7 +48,11 @@ class EqtEmbedding():
         for i in range(self.n_eqt) :
             print('Fitting equity : ', self.eqt_code[i], '({}/{})'.format(i,self.n_eqt))
             model = self.create_model(opti,loss)
-            self.history = model.fit(self.train.data[i], self.train.labels[i], batch_size=batch_size, validation_data=(self.val.data[i], self.val.labels[i]), epochs=epochs,verbose = 1)
+            try :
+                self.history = model.fit(self.train.data[i], self.train.labels[i], batch_size=batch_size, validation_data=(self.val.data[i], self.val.labels[i]), epochs=epochs,verbose = 1)
+            except IndexError :
+                self.history = model.fit(self.train.data[i], self.train.labels[i], batch_size=batch_size, epochs=epochs,verbose = 1)
+            
             layer_output = K.function([model.layers[0].input],
                                   [model.layers[0].output])
             self.embeddings[self.eqt_code[i]] = layer_output([self.train.data[i]])[0]
