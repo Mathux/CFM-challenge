@@ -45,7 +45,7 @@ class EqtEmbedding():
     # Return the embedding
     def transform(self, opti, loss, batch_size = 32, epochs = 20):
         self.embeddings = {}
-        for i in range(self.n_eqt) :
+        for i in range(246,self.n_eqt) :
             print('Fitting equity : ', self.eqt_code[i], '({}/{})'.format(i,self.n_eqt))
             model = self.create_model(opti,loss)
             try :
@@ -137,5 +137,5 @@ class NaiveEmbedding(EqtEmbedding):
 if __name__ == '__main__':
     data = Data(verbose=True)
     embeddings_model = NaiveEmbedding(data, verbose=True)
-    #embeddings_model.transform('adam','binary_crossentropy')
-    #embeddings_model.save_embeddings('embeddings.pickle')
+    embeddings_model.transform('adam','binary_crossentropy')
+    embeddings_model.save_embeddings('embeddings.pickle')
