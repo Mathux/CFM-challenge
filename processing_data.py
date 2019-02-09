@@ -10,7 +10,7 @@ class Dataset:
         self.labels = labels
 
 class Data:
-    def __init__(self, split_val=0.1, scaler = None, seed=SEED, verbose=False, small=False):
+    def __init__(self, split_val=0.1, scaler = 'StandardScaler', seed=SEED, verbose=False, small=False):
         if small:
             print("Warning! Using small datasets..")
             

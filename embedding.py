@@ -45,7 +45,7 @@ class EqtEmbedding():
     # Return the embedding
     def transform(self, opti, loss, batch_size = 32, epochs = 20):
         self.embeddings = {}
-        for i in range(246,self.n_eqt) :
+        for i in range(self.n_eqt) :
             print('Fitting equity : ', self.eqt_code[i], '({}/{})'.format(i,self.n_eqt))
             model = self.create_model(opti,loss)
             try :
