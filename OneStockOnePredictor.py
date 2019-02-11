@@ -65,8 +65,34 @@ class OneStockOnePredictor(object) :
             stocks_done +=1
         
     
-    def predict(self,X) :
+    def predict_proba(self,X) :
         
+        cols = [col for col in X.columns if not col.endswith(':00')]
+        X = X[cols]
+        predicted_proba = pd.DataFrame(columns = ['ID'])
+        eqt_code = X['eqt_code'].unique()
+        stocks_done = 0
+        nb_stocks = len(eqt_code)
+        
+        for code in eqt_code :
+            if self.progress_bar :
+                progressBar(stocks_done,nb_stocks)
+            data_code = X[X['eqt_code']==code].sort_values(by = 'ID')
+            temp = pd.DataFrame()
+            temp['ID'] = data_code['ID']
+            data_code = data_code.drop(['ID','eqt_code'],axis =1)
+            proba = self.predictors[code].predict_proba(data_code)
+            proba_0,proba_1 = proba[:,0],proba[:,1]
+            temp['proba 0'] = proba_0
+            temp['proba 1'] = proba_1
+            predicted_proba = predicted_proba.append(temp)
+            stocks_done +=1
+        
+        predicted_labels.sort_values(by = 'ID')
+        
+        return predicted_labels[['proba 0', 'proba 1']].values
+    
+    def predict(self,X) : 
         cols = [col for col in X.columns if not col.endswith(':00')]
         X = X[cols]
         predicted_labels = pd.DataFrame(columns = ['ID','end_of_day_return'])
@@ -88,7 +114,7 @@ class OneStockOnePredictor(object) :
         
         predicted_labels.sort_values(by = 'ID')
         
-        return predicted_labels
+        return predicted_labels['end_of_day_return']
     
     
     def score(self,X,y) :

@@ -10,7 +10,7 @@ class Dataset:
         self.labels = labels
 
 class Data:
-    def __init__(self, split_val=0.1, scaler = 'StandardScaler', seed=SEED, verbose=False, small=False):
+    def __init__(self, split_val=0.1, scaler = 'StandardScaler', seed=SEED, verbose=False, small=False, embeddings = None):
         if small:
             print("Warning! Using small datasets..")
             
@@ -27,13 +27,15 @@ class Data:
             print("Test dataset loaded!")
             print("Add features...")
             
-        features.add_features(self.x)
-        features.add_features(self.x_test)
+        features.add_features(self.x, embeddings = embeddings)
+        features.add_features(self.x_test, embeddings = embeddings)
         
         if not scaler is None :            
             if scaler == 'StandardScaler' :
-                self.x.iloc[:,75::] = StandardScaler().fit_transform(self.x.iloc[:,75::])
-                self.x_test.iloc[:,75::] = StandardScaler().fit_transform(self.x_test.iloc[:,75::])
+                scaled_columns = [c for c in self.x.columns if ((not c.endswith(':00')) and (not c in ['eqt_code','ID','sector','date','return_nan','countd_date','countd_product']))]
+                print(scaled_columns)
+                self.x[scaled_columns] = StandardScaler().fit_transform(self.x[scaled_columns])
+                self.x_test[scaled_columns] = StandardScaler().fit_transform(self.x_test[scaled_columns])
             
         if verbose:
             print("Features added!")
