@@ -49,7 +49,6 @@ class Data:
                         'countd_date', 'countd_product'
                     ]))
                 ]
-                print(scaled_columns)
                 self.x[scaled_columns] = sklearn.preprocessing.StandardScaler(
                 ).fit_transform(self.x[scaled_columns])
                 self.x_test[
