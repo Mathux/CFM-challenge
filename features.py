@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from sklearn.cluster import KMeans
 
 
 # Extract features from data
@@ -79,3 +80,19 @@ def plot_corr(df,size=10):
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(size,size))
     sns.heatmap(df.corr(), annot=True)
+    
+def get_data_matrix(embeddings) :
+    n_samples,n_features = len(embeddings), len(list(embeddings.values())[0])
+    X = np.zeros((n_samples,n_features))
+    for i,eqt in enumerate(embeddings.keys()) :
+        X[i,:] = embeddings[eqt]
+    return X
+    
+def get_sector(embeddings,n_clusters = 8) :
+    X = get_data_matrix(embeddings)
+    clf = KMeans(n_clusters = n_clusters,n_init = 30)
+    sectors_temp = clf.fit_predict(X)
+    sectors = {}
+    for j,eqt in enumerate(embeddings.keys()) :
+        sectors[eqt] = sectors_temp[j]
+    return sectors
