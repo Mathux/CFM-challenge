@@ -4,7 +4,7 @@ from sklearn.cluster import KMeans
 
 
 # Extract features from data
-def add_features(data,eps = 10**-10):
+def add_features(data,eps = 10**-10, n_cluster = 50, embeddings = None):
     # Get usefull columns (data from different hours)
     return_cols = [col for col in data.columns if col.endswith(':00')]
 
@@ -37,10 +37,13 @@ def add_features(data,eps = 10**-10):
     data['return_trend'] = data['15:20:00'] - data['09:30:00']
     data['log_vol_difference_to_market'] = np.log(np.abs(data['15:20:00']+eps)) - data['avg_market_log_vol_date']
     data['log_vol_trend'] = np.log(np.abs(data['15:20:00']+eps)) - np.log(np.abs(data['09:30:00']+eps))
+    
+    if not embeddings is None : 
+        sectors = get_sector(embeddings,n_cluster = n_cluster)
+        data = add_sector(data,sectors)
+        data = group_by_sector(data,return_cols)
 
     
-   
-
 def group_by_date_countd(all_data,return_cols):
     groupby_col = "date"
     unique_products = all_data.groupby([groupby_col])["eqt_code"].nunique()
@@ -96,3 +99,25 @@ def get_sector(embeddings,n_clusters = 8) :
     for j,eqt in enumerate(embeddings.keys()) :
         sectors[eqt] = sectors_temp[j]
     return sectors
+
+def add_sector(data,sectors) :
+    data['sector'] = data['eqt_code'].map(sectors)
+    return data
+
+def group_by_sector(all_data,return_cols,sector) :
+    groupby_col = "sector"
+    unique_products = all_data.groupby([groupby_col])["eqt_code"].nunique()
+    avg_market_return = all_data.groupby([groupby_col])['avg_return_date_eqt'].mean()
+    var_market_return = all_data.groupby([groupby_col])['var_return_date_eqt'].mean()
+    avg_log_vol_market_return = all_data.groupby([groupby_col])['avg_log_vol_date_eqt'].mean()
+    var_log_vol_market_return = all_data.groupby([groupby_col])['var_log_vol_date_eqt'].mean()
+    all_data.set_index([groupby_col], inplace=True)
+    all_data["countd_product"] = unique_products.astype('float64')
+    all_data["avg_market_return_date"] = avg_market_return.astype('float64')
+    all_data["var_market_return_date"] = var_market_return.astype('float64')
+    all_data["avg_market_log_vol_date"] = avg_log_vol_market_return.astype('float64')
+    all_data["avg_market_log_vol_date"] = var_log_vol_market_return.astype('float64')
+    all_data.reset_index(inplace=True)
+    return all_data
+
+    
