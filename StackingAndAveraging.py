@@ -1,11 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Feb  5 21:42:18 2019
-
-@author: evrardgarcelon
-"""
-
 import numpy as np
 import pandas as pd
 from utils import submission, progressBar
@@ -15,7 +7,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 
 class Stacking(object) :
-    def __init__(self,train, train_labels, weak_classifiers = [], meta_classifier = "LogisticRegression",progress_bar = False) :
+    def __init__(self,train, train_labels, weak_classifiers = [], meta_classifier = "LogisticRegression",progress_bar = False, C = 1, n_neighbors = 15) :
         
         cols = [col for col in train.columns if not col.endswith(':00')]
         train = train[cols]
@@ -48,7 +40,7 @@ class Stacking(object) :
             
         elif meta_classifier == 'KNN' :
             
-            self.meta_clf = SVC(C = 1)
+            self.meta_clf = KNeighborsClassifier(n_neighbors = n_neighbors)
             self.meta_clf.fit(new_dataset,train_labels['end_of_day_return'])
             
         else : 

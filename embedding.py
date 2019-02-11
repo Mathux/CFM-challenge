@@ -55,7 +55,7 @@ class EqtEmbedding():
             
             layer_output = K.function([model.layers[0].input],
                                   [model.layers[0].output])
-            self.embeddings[self.eqt_code[i]] = layer_output([self.train.data[i]])[0]
+            self.embeddings[self.eqt_code[i]] = np.mean(layer_output([self.train.data[i]])[0],axis = 0)
             
       
 
@@ -137,5 +137,5 @@ class NaiveEmbedding(EqtEmbedding):
 if __name__ == '__main__':
     data = Data(verbose=True)
     embeddings_model = NaiveEmbedding(data, verbose=True)
-    #embeddings_model.transform('adam','binary_crossentropy')
-    #embeddings_model.save_embeddings('embeddings.pickle')
+    embeddings_model.transform('adam','binary_crossentropy')
+    embeddings_model.save_embeddings('embeddings.pickle')
