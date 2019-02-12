@@ -4,7 +4,7 @@ from sklearn.cluster import KMeans
 
 
 # Extract features from data
-def add_features(data, eps=10**-10, n_cluster=50, embeddings=None):
+def add_features(data, eps=10**-10, n_cluster=50, embeddings=None, ewma = True):
     print("mem data:", id(data))
     # Get usefull columns (data from different hours)
     return_cols = [col for col in data.columns if col.endswith(':00')]
@@ -27,8 +27,9 @@ def add_features(data, eps=10**-10, n_cluster=50, embeddings=None):
 
     data['09:30:00'].fillna(0, inplace=True)
     data[return_cols] = data[return_cols].interpolate(axis=1)
-
-    data[return_cols] = data[return_cols].ewm(alpha=0.2, axis=1).mean()
+    
+    if ewma :
+        data[return_cols] = data[return_cols].ewm(alpha=0.2, axis=1).mean()
 
     returns = data[return_cols]
     df_train = pd.DataFrame(

@@ -12,13 +12,15 @@ class Dataset:
 
 
 class Data:
-    def __init__(self, d = 233, 
+    def __init__(self, d = 233,
+                 split = True,
                  split_val=0.1,
                  scaler='StandardScaler',
                  seed=config.SEED,
                  verbose=False,
                  small=False,
-                 embeddings=None):
+                 embeddings=None,
+                 ewma = False):
         if small:
             print("Warning! Using small datasets..")
 
@@ -36,8 +38,8 @@ class Data:
             print("Add features...")
 
         print("mem self.x:", id(self.x))
-        self.x = features.add_features(self.x, embeddings=embeddings)
-        self.x_test = features.add_features(self.x_test, embeddings=embeddings)
+        self.x = features.add_features(self.x, embeddings=embeddings,ewma = ewma)
+        self.x_test = features.add_features(self.x_test, embeddings=embeddings, ewma = ewma)
 
         print("mem self.x:", id(self.x))
         print(self.x.keys())
@@ -59,11 +61,12 @@ class Data:
 
         if verbose:
             print("Features added!")
+        if split :
             print("Split the dataset...")
-
-        self.split(split_val, seed)
-        if verbose:
-            print("Dataset splitted!")
+        
+            self.split(split_val, seed)
+            if verbose:
+                print("Dataset splitted!")
 
         self.test = Dataset(self.x_test, None)
 
