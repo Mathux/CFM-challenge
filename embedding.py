@@ -2,7 +2,7 @@ import pickle
 
 import numpy as np
 from keras import backend as K
-from keras.layers import Dense
+from keras.layers import Dense, LSTM, Bidirectional, TimeDistributed, Reshape
 from keras.models import Sequential
 from sklearn.utils import resample
 
@@ -148,10 +148,34 @@ class NaiveEmbedding(EqtEmbedding):
         model.compile(optimizer=opti, loss=loss, metrics=['acc'])
 
         return model
+    
+class LessNaiveEmbedding(EqtEmbedding):
+    def __init__(self,
+                 data,
+                 outputdim=300,
+                 opti="adam",
+                 lr=0.1,
+                 loss="binary_crossentropy",
+                 verbose=False):
+        super(LessNaiveEmbedding, self).__init__(data, outputdim, verbose=verbose)
+        self.model = self.create_model(opti, loss)
+
+    def create_model(self, opti, loss):
+
+        model = Sequential()
+        model.add(Reshape((self.n_hours,1)))
+        model.add(TimeDistributed(Dense(self.outputdim)))
+        
+        model.add(LSTM(32))
+        # Now we have the embedding, continue to learn
+        model.add(Dense(1, activation='sigmoid'))
+        model.compile(optimizer=opti, loss=loss, metrics=['acc'])
+
+        return model
 
 
 if __name__ == '__main__':
-    data = Data(verbose=True)
-    embeddings_model = NaiveEmbedding(data, verbose=True)
+    data = Data(verbose=True,small = True)
+    embeddings_model = LessNaiveEmbedding(data, verbose=True)
     embeddings_model.transform('adam', 'binary_crossentropy')
     embeddings_model.save_embeddings('embeddings.pickle')
