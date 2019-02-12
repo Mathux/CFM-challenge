@@ -72,3 +72,8 @@ gs = model_selection.RandomizedSearchCV(
 gs.fit(data.train.data, train_labels, **fit_params)
 print('Best score reached: {} with params: {} '.format(gs.best_score_,
                                                        gs.best_params_))
+
+preds = gs.predict(data.test.data)
+
+from utils import submission
+submission(preds, data.test.data["ID"])
