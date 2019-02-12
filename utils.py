@@ -10,8 +10,11 @@ import sys
 
 import numpy as np
 import pandas as pd
+import pylab as plt
 
 import config as conf
+
+from sklearn.decomposition import PCA
 
 
 # Create a small dataset
@@ -102,6 +105,15 @@ def progressBar(value, endvalue, bar_length=50):
         arrow + spaces, int(round(percent * 100))))
     sys.stdout.flush()
 
+def plot_pca(data) :
+    pca = PCA(n_components=2)
+    X_r = pca.fit(data).transform(data)
+    plt.scatter(X_r[:,0], X_r[:,1])
+    plt.show()
+        
+    
+    
 
 if __name__ == "__main__":
-    create_small_dataset()
+    pass
+    #create_small_dataset()

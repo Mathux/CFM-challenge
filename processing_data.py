@@ -48,7 +48,7 @@ class Data:
                     c for c in self.x.columns
                     if ((not c.endswith(':00')) and (c not in [
                         'eqt_code', 'ID', 'sector', 'date', 'return_nan',
-                        'countd_date', 'countd_product'
+                        'countd_date', 'countd_product', 'Unnamed: 0'
                     ]))
                 ]
                 self.x[scaled_columns] = sklearn.preprocessing.StandardScaler(
@@ -83,6 +83,6 @@ if __name__ == '__main__':
         import pickle
         embeddings = pickle.load(handle)
 
-    data = Data(verbose=True, embeddings=embeddings)
+    data = Data(small = True, verbose=True, embeddings=None)
     # data = pd.DataFrame.from_dict(embeddings)
     # kmeans = KMeans(n_clusters=10, random_state=0).fit(X)
