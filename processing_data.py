@@ -35,9 +35,11 @@ class Data:
             print("Test dataset loaded!")
             print("Add features...")
 
-        features.add_features(self.x, embeddings=embeddings)
-        features.add_features(self.x_test, embeddings=embeddings)
+        print("mem self.x:", id(self.x))
+        self.x = features.add_features(self.x, embeddings=embeddings)
+        self.x_test = features.add_features(self.x_test, embeddings=embeddings)
 
+        print("mem self.x:", id(self.x))
         print(self.x.keys())
                 
         if scaler is not None:
@@ -82,6 +84,6 @@ if __name__ == '__main__':
         import pickle
         embeddings = pickle.load(handle)
 
-    data = Data(small=True, verbose=True, embeddings=embeddings)
+    data = Data(verbose=True, embeddings=embeddings)
     # data = pd.DataFrame.from_dict(embeddings)
     # kmeans = KMeans(n_clusters=10, random_state=0).fit(X)
