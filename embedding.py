@@ -175,7 +175,7 @@ class LessNaiveEmbedding(EqtEmbedding):
 
 
 if __name__ == '__main__':
-    data = Data(verbose=True,small = True)
+    data = Data(verbose=True)
     embeddings_model = LessNaiveEmbedding(data, verbose=True)
     embeddings_model.transform('adam', 'binary_crossentropy')
     embeddings_model.save_embeddings('embeddings.pickle')
