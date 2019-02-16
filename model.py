@@ -22,8 +22,7 @@ from processing_data import Data
 from sklearn.preprocessing import LabelEncoder
 
 
-class LSTMModel(object) :
-    
+class LSTMModel(object) :    
     def __init__(self,X, y, eqt_embeddings_size = 80, lstm_out_dim = 5, 
                  use_lstm = False, dropout_rate = 0.1, kernel_size = 2, loss =
                  'binary_crossentropy', optimizer = None) :
@@ -39,7 +38,8 @@ class LSTMModel(object) :
         self.dropout_rate = dropout_rate
         self.kernel_size = kernel_size
         self.loss = loss
-        self.optimizer = optimizer
+        self.optimizer = optimizer        
+        self.model = self.create_model()
         
     def create_model(self):
         
@@ -67,8 +67,7 @@ class LSTMModel(object) :
         returns_lstm = PReLU()(returns_lstm)
         returns_lstm = Dropout(self.dropout_rate)(returns_lstm)
         
-        # and the the LSTM/CNN part for the volatility time series
-        
+        # and the the LSTM/CNN part for the volatility time series        
         vol_input = Input(shape = (self.returns_length,1),name = 'vol_input')
         
         if self.use_lstm :
@@ -77,7 +76,7 @@ class LSTMModel(object) :
             vol_lstm = Conv1D(filters = self.lstm_out_dim, 
                               kernel_size = self.kernel_size, 
                               activation = 'linear',
-                              name = 'returns_conv')(vol_input)
+                              name = 'vol_conv')(vol_input)
             vol_lstm = Flatten()(vol_lstm)
         vol_lstm = PReLU()(vol_lstm)
         vol_lstm = Dropout(self.dropout_rate)(vol_lstm)
@@ -118,8 +117,6 @@ class LSTMModel(object) :
     
     def compile_fit(self,epochs = 30, batch_size = 64, verbose = 0) :
         
-        model = self.create_model()
-        
         if self.optimizers is None :
             opti = Nadam()
         else :
@@ -137,9 +134,9 @@ class LSTMModel(object) :
                                       patience=5, 
                                       min_lr=0.000001, 
                                       verbose=verbose)
-        model.compile(optimizer = opti, loss = self.loss, metrics = ['acc'])
+        self.model.compile(optimizer = opti, loss = self.loss, metrics = ['acc'])
         X_train,y_train,X_val,y_val = self.process_data(X,y)
-        history = model.fit(X_train, y_train, epochs = epochs, 
+        history = self.model.fit(X_train, y_train, epochs = epochs, 
                             batch_size = batch_size, 
                             verbose=verbose, 
                             validation_data=(X_val, y_val),
@@ -152,9 +149,5 @@ if __name__ == '__main__' :
     
     data = Data(small = True)
     X,y = data.train.data, data.train.labels
-    model = LSTMModel(X,y, use_lstm = True)
-    model.summary()
-        
-        
-        
-
+    model = LSTMModel(X,y, use_lstm = False)
+    #model.compile_fit()
