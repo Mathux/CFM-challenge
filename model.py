@@ -153,7 +153,7 @@ if __name__ == '__main__' :
     data = Data(small = True)
     X,y = data.train.data, data.train.labels
     model = LSTMModel(X,y, use_lstm = True)
-    model.summary()
+    model.create_model().summary()
         
         
         
