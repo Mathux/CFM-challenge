@@ -5,7 +5,7 @@ from sklearn.cluster import KMeans
 
 # Extract features from data
 def add_features(data, eps=10**-10, n_cluster=50, embeddings=None, ewma = True):
-    print("mem data:", id(data))
+    #print("mem data:", id(data))
     # Get usefull columns (data from different hours)
     return_cols = [col for col in data.columns if col.endswith(':00')]
 
@@ -52,8 +52,8 @@ def add_features(data, eps=10**-10, n_cluster=50, embeddings=None, ewma = True):
         sectors = get_sector(embeddings, n_clusters=n_cluster)
         add_sector(data, sectors)
         data = group_by_sector(data, return_cols, sectors)
-    print(data.keys())
-    print("mem data:", id(data))
+    #print(data.keys())
+    #print("mem data:", id(data))
     return data
 
 

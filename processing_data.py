@@ -37,12 +37,12 @@ class Data:
             print("Test dataset loaded!")
             print("Add features...")
 
-        print("mem self.x:", id(self.x))
+        #print("mem self.x:", id(self.x))
         self.x = features.add_features(self.x, embeddings=embeddings,ewma = ewma)
         self.x_test = features.add_features(self.x_test, embeddings=embeddings, ewma = ewma)
 
-        print("mem self.x:", id(self.x))
-        print(self.x.keys())
+        #print("mem self.x:", id(self.x))
+        #print(self.x.keys())
                 
         if scaler is not None:
             if scaler == 'StandardScaler':
