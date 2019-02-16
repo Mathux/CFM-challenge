@@ -15,6 +15,7 @@ SpatialDropout1D, concatenate, BatchNormalization, Flatten, LSTM)
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
 from keras.optimizers import Nadam
 from keras.utils import to_categorical
+from keras.callbacks import ModelCheckpoint,EarlyStopping,ReduceLROnPlateau
 
 from processing_data import Data
 
@@ -112,19 +113,47 @@ class LSTMModel(object) :
                               handmade_features_input], outputs=[output])
         return model
         
-        
-        
-        
-        
-        
     def process_data(self,X,y) : 
         pass
+    
+    def compile_fit(self,epochs = 30, batch_size = 64, verbose = 0) :
+        
+        model = self.create_model()
+        
+        if self.optimizers is None :
+            opti = Nadam()
+        else :
+            opti = self.optimizers
+        
+        early_stop = EarlyStopping(monitor='val_acc', patience=3, 
+                                   verbose=verbose, 
+                                   min_delta=1e-8, 
+                                   mode='min')
+        checkpointer = ModelCheckpoint(filepath="test.hdf5", 
+                                       verbose=verbose, 
+                                       save_best_only=True)
+        reduce_lr = ReduceLROnPlateau(monitor='val_acc', 
+                                      factor=0.9,
+                                      patience=5, 
+                                      min_lr=0.000001, 
+                                      verbose=verbose)
+        model.compile(optimizer = opti, loss = self.loss, metrics = ['acc'])
+        X_train,y_train,X_val,y_val = self.process_data(X,y)
+        history = model.fit(X_train, y_train, epochs = epochs, 
+                            batch_size = batch_size, 
+                            verbose=verbose, 
+                            validation_data=(X_val, y_val),
+                            callbacks=[reduce_lr, checkpointer,early_stop],
+                            shuffle=True)
+
+        return history
     
 if __name__ == '__main__' :
     
     data = Data(small = True)
     X,y = data.train.data, data.train.labels
-    model= LSTMModel(X,y, use_lstm = True)
+    model = LSTMModel(X,y, use_lstm = True)
+    model.summary()
         
         
         
