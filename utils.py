@@ -7,6 +7,7 @@ Created on Thu Jan 24 21:15:21 2019
 """
 
 import sys
+import os
 
 import numpy as np
 import pandas as pd
@@ -105,15 +106,19 @@ def progressBar(value, endvalue, bar_length=50):
         arrow + spaces, int(round(percent * 100))))
     sys.stdout.flush()
 
-def plot_pca(data) :
+
+def plot_pca(data):
     pca = PCA(n_components=2)
     X_r = pca.fit(data).transform(data)
-    plt.scatter(X_r[:,0], X_r[:,1])
+    plt.scatter(X_r[:, 0], X_r[:, 1])
     plt.show()
-        
-    
-    
+
+
+def create_dir(directory):
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
 
 if __name__ == "__main__":
     pass
-    #create_small_dataset()
+    # create_small_dataset()

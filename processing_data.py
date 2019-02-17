@@ -12,15 +12,16 @@ class Dataset:
 
 
 class Data:
-    def __init__(self, d = 233,
-                 split = True,
+    def __init__(self,
+                 d=233,
+                 split=True,
                  split_val=0.1,
                  scaler='StandardScaler',
                  seed=config.SEED,
                  verbose=False,
                  small=False,
                  embeddings=None,
-                 ewma = False):
+                 ewma=False):
         if small:
             print("Warning! Using small datasets..")
 
@@ -37,13 +38,15 @@ class Data:
             print("Test dataset loaded!")
             print("Add features...")
 
-        #print("mem self.x:", id(self.x))
-        self.x = features.add_features(self.x, embeddings=embeddings,ewma = ewma)
-        self.x_test = features.add_features(self.x_test, embeddings=embeddings, ewma = ewma)
+        # print("mem self.x:", id(self.x))
+        self.x = features.add_features(
+            self.x, embeddings=embeddings, ewma=ewma)
+        self.x_test = features.add_features(
+            self.x_test, embeddings=embeddings, ewma=ewma)
 
-        #print("mem self.x:", id(self.x))
-        #print(self.x.keys())
-                
+        # print("mem self.x:", id(self.x))
+        # print(self.x.keys())
+
         if scaler is not None:
             if scaler == 'StandardScaler':
                 scaled_columns = [
@@ -61,9 +64,9 @@ class Data:
 
         if verbose:
             print("Features added!")
-        if split :
+        if split:
             print("Split the dataset...")
-        
+
             self.split(split_val, seed)
             if verbose:
                 print("Dataset splitted!")
@@ -73,6 +76,14 @@ class Data:
         if verbose:
             print("Data loading done!")
 
+        self.config = {"split": split,
+                       "split_val": split_val,
+                       "scaler": scaler,
+                       "seed": seed,
+                       "small": small,
+                       "embeddings": embeddings,
+                       "ewma": ewma}
+        
     def split(self, split_val, seed):
         train, val, train_labels, val_labels = utils.split_dataset(
             self.x, self.labels, split_val, seed)
@@ -86,6 +97,6 @@ if __name__ == '__main__':
         import pickle
         embeddings = pickle.load(handle)
 
-    data = Data(small = True, verbose=True, embeddings=None)
+    data = Data(small=True, verbose=True, embeddings=None)
     # data = pd.DataFrame.from_dict(embeddings)
     # kmeans = KMeans(n_clusters=10, random_state=0).fit(X)
