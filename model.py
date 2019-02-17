@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Sun Feb 17 17:00:35 2019
+
+@author: evrardgarcelon
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Sat Feb 16 16:33:23 2019
 
 @author: evrardgarcelon, mathispetrovich
@@ -9,6 +17,8 @@ Created on Sat Feb 16 16:33:23 2019
 import utils
 import numpy as np
 import pylab as plt
+
+from janet import JANET
 
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 from keras.layers import (Dense, Dropout, Embedding, Conv1D, PReLU,
@@ -55,7 +65,7 @@ class LSTMModel(object):
             input_dim= self.n_eqt + 1,
             input_length= 1,
             name='eqt_embeddings')(eqt_code_input)
-        eqt_emb = SpatialDropout1D(0.2)(eqt_emb)
+        eqt_emb = SpatialDropout1D(0.3)(eqt_emb)
         eqt_emb = Flatten()(eqt_emb)
 
         # Then the LSTM/CNN1D for the returns time series
@@ -63,7 +73,7 @@ class LSTMModel(object):
             shape=(self.returns_length, 1), name='returns_input')
 
         if self.use_lstm:
-            returns_lstm = LSTM(self.lstm_out_dim)(returns_input)
+            returns_lstm = JANET(self.lstm_out_dim,return_sequences = False)(returns_input)
         else:
             returns_lstm = Conv1D(
                 filters=self.lstm_out_dim,
@@ -73,21 +83,15 @@ class LSTMModel(object):
             returns_lstm = Dropout(self.dropout_rate)(returns_lstm)
             returns_lstm = MaxPooling1D()(returns_lstm)
             returns_lstm = Flatten()(returns_lstm)
-        returns_lstm = PReLU()(returns_lstm)
-        returns_lstm = Dropout(self.dropout_rate)(returns_lstm)
         returns_lstm = Dense(32, activation='linear')(returns_lstm)
-        returns_lstm = PReLU()(returns_lstm)
-        returns_lstm = BatchNormalization()(returns_lstm)
         returns_lstm = Dropout(self.dropout_rate)(returns_lstm)
-        returns_lstm = Dense(32, activation='linear')(returns_lstm)
         returns_lstm = PReLU()(returns_lstm)
-        returns_lstm = BatchNormalization()(returns_lstm)
 
         # and the the LSTM/CNN part for the volatility time series
         vol_input = Input(shape=(self.returns_length, 1), name='vol_input')
 
         if self.use_lstm:
-            vol_lstm = LSTM(self.lstm_out_dim)(vol_input)
+            vol_lstm = JANET(self.lstm_out_dim,return_sequences = False)(vol_input)
         else:
             vol_lstm = Conv1D(
                 filters=self.lstm_out_dim,
@@ -97,34 +101,14 @@ class LSTMModel(object):
             vol_lstm = Dropout(self.dropout_rate)(vol_lstm)
             vol_lstm = MaxPooling1D()(vol_lstm)
             vol_lstm = Flatten()(vol_lstm)
-        vol_lstm = PReLU()(vol_lstm)
-        vol_lstm = Dropout(self.dropout_rate)(vol_lstm)
         vol_lstm = Dense(32, activation='linear')(vol_lstm)
-        vol_lstm = PReLU()(vol_lstm)
-        vol_lstm = BatchNormalization()(vol_lstm)
-        vol_lstm = PReLU()(vol_lstm)
         vol_lstm = Dropout(self.dropout_rate)(vol_lstm)
-        vol_lstm = Dense(32, activation='linear')(vol_lstm)
         vol_lstm = PReLU()(vol_lstm)
-        vol_lstm = BatchNormalization()(vol_lstm)
-
+        
         x = concatenate([eqt_emb, returns_lstm, vol_lstm])
-        x = Dense(64, activation='linear')(x)
+        x = Dense(128, activation='linear')(x)
         x = PReLU()(x)
-        x = BatchNormalization()(x)
-        x = Dropout(self.dropout_rate)(x)
-        x = Dense(64, activation='linear')(x)
-        x = PReLU()(x)
-        x = BatchNormalization()(x)
-        x = Dropout(self.dropout_rate)(x)
-        x = Dense(64, activation='linear')(x)
-        x = PReLU()(x)
-        x = BatchNormalization()(x)
-        x = Dropout(self.dropout_rate)(x)
-        x = Dense(64, activation='linear')(x)
-        x = PReLU()(x)
-        x = BatchNormalization()(x)
-        x = Dropout(self.dropout_rate)(x)
+
 
         # Finally concatenate the handmade features and the one from
         # the embeddings from the lstms/convultions
@@ -134,15 +118,11 @@ class LSTMModel(object):
             name='handmade_features_input')
 
         x = concatenate([handmade_features_input, x])
-        x = Dense(64, activation='linear')(x)
+        x = Dense(128, activation='linear')(x)
         x = PReLU()(x)
         x = BatchNormalization()(x)
         x = Dropout(self.dropout_rate)(x)
         x = Dense(64, activation='linear')(x)
-        x = PReLU()(x)
-        x = BatchNormalization()(x)
-        x = Dropout(self.dropout_rate)(x)
-        x = Dense(32, activation='linear')(x)
         x = PReLU()(x)
         x = BatchNormalization()(x)
         x = Dropout(self.dropout_rate)(x)
@@ -188,7 +168,7 @@ class LSTMModel(object):
         del temp_returns, temp_vol
         return input_train, y_train, input_val, y_val
 
-    def compile_fit(self, epochs=30, batch_size=32, verbose=0):
+    def compile_fit(self, epochs=30, batch_size=128, verbose=0):
 
         if self.optimizer is None:
             #opti = Nadam()
@@ -225,7 +205,7 @@ class LSTMModel(object):
 if __name__ == '__main__':
     data = Data(small=True)
     X, y = data.train.data, data.train.labels
-    model = LSTMModel(X, y, use_lstm=False)
+    model = LSTMModel(X, y, use_lstm=True)
     plot_model(model.model,to_file = 'model.png',show_shapes = True)
     history = model.compile_fit(epochs = 100,verbose = 1)
     plt.figure()
