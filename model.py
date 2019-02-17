@@ -185,7 +185,7 @@ class LSTMModel(object):
             verbose=verbose)
         self.model.compile(optimizer=opti, loss=self.loss, metrics=['acc'])
         X_train, y_train, X_val, y_val = self.process_data()
-        history = self.model.fit(
+        history = self.model.fit()
             X_train,
             y_train,
             epochs=epochs,
