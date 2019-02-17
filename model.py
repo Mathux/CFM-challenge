@@ -8,14 +8,15 @@ Created on Sat Feb 16 16:33:23 2019
 
 import utils
 import numpy as np
+import pylab as plt
 
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 from keras.layers import (Dense, Dropout, Embedding, Conv1D, PReLU,
                           SpatialDropout1D, concatenate, BatchNormalization,
-                          Flatten, LSTM)
+                          Flatten, LSTM, MaxPooling1D)
 from keras.models import Model, Input
-from keras.optimizers import Nadam, Adam
-from keras.utils import plot_model
+from keras.optimizers import Nadam, RMSprop
+from keras.utils import plot_model,to_categorical
 from sklearn.preprocessing import LabelEncoder
 from processing_data import Data
 
@@ -24,9 +25,9 @@ class LSTMModel(object):
                  X,
                  y,
                  eqt_embeddings_size=80,
-                 lstm_out_dim=30,
+                 lstm_out_dim=32,
                  use_lstm=False,
-                 dropout_rate=0.1,
+                 dropout_rate=0.5,
                  kernel_size=2,
                  loss='binary_crossentropy',
                  optimizer=None):
@@ -72,6 +73,9 @@ class LSTMModel(object):
             returns_lstm = Flatten()(returns_lstm)
         returns_lstm = PReLU()(returns_lstm)
         returns_lstm = Dropout(self.dropout_rate)(returns_lstm)
+        returns_lstm = Dense(64, activation='linear')(returns_lstm)
+        returns_lstm = PReLU()(returns_lstm)
+        returns_lstm = BatchNormalization()(returns_lstm)
 
         # and the the LSTM/CNN part for the volatility time series
         vol_input = Input(shape=(self.returns_length, 1), name='vol_input')
@@ -87,13 +91,16 @@ class LSTMModel(object):
             vol_lstm = Flatten()(vol_lstm)
         vol_lstm = PReLU()(vol_lstm)
         vol_lstm = Dropout(self.dropout_rate)(vol_lstm)
+        vol_lstm = Dense(64, activation='linear')(vol_lstm)
+        vol_lstm = PReLU()(vol_lstm)
+        vol_lstm = BatchNormalization()(vol_lstm)
 
         x = concatenate([eqt_emb, returns_lstm, vol_lstm])
-        x = Dense(32, activation='linear')(x)
+        x = Dense(64, activation='linear')(x)
         x = PReLU()(x)
         x = BatchNormalization()(x)
         x = Dropout(self.dropout_rate)(x)
-        x = Dense(32, activation='linear')(x)
+        x = Dense(64, activation='linear')(x)
         x = PReLU()(x)
         x = BatchNormalization()(x)
         x = Dropout(self.dropout_rate)(x)
@@ -114,7 +121,7 @@ class LSTMModel(object):
         x = PReLU()(x)
         x = BatchNormalization()(x)
         x = Dropout(self.dropout_rate)(x)
-        output = Dense(1, activation='sigmoid')(x)
+        output = Dense(2, activation='softmax')(x)
 
         model = Model(
             inputs=[
@@ -128,8 +135,8 @@ class LSTMModel(object):
         X_train, X_val, y_train, y_val = utils.split_dataset(self.X,self.y)
         input_train = []
         input_val = []
-        y_train = y_train.drop('ID',axis = 1)['end_of_day_return'].values
-        y_val = y_val.drop('ID',axis = 1)['end_of_day_return'].values
+        y_train = to_categorical(y_train.drop('ID',axis = 1)['end_of_day_return'].values)
+        y_val = to_categorical(y_val.drop('ID',axis = 1)['end_of_day_return'].values)
         
         temp_eqt = LabelEncoder()
         temp_eqt.fit(X_train['eqt_code'].values)
@@ -159,7 +166,8 @@ class LSTMModel(object):
     def compile_fit(self, epochs=30, batch_size=64, verbose=0):
 
         if self.optimizer is None:
-            opti = Nadam()
+            #opti = Nadam()
+            opti = RMSprop(lr=0.001, rho=0.9, epsilon=None, decay=10**-6)
         else:
             opti = self.optimizers
 
@@ -184,7 +192,7 @@ class LSTMModel(object):
             batch_size=batch_size,
             verbose=verbose,
             validation_data=(X_val, y_val),
-            callbacks=[reduce_lr, checkpointer],
+            callbacks=[],
             shuffle=True)
 
         return history
@@ -194,4 +202,22 @@ if __name__ == '__main__':
     data = Data(small=True)
     X, y = data.train.data, data.train.labels
     model = LSTMModel(X, y, use_lstm=True)
-    model.compile_fit(epochs = 50,verbose = 1)
+    plot_model(model.model,to_file = 'model.png',show_shapes = True)
+    history = model.compile_fit(epochs = 50,verbose = 1)
+    plt.figure()
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='best')
+    plt.show()
+    
+    plt.figure()
+    plt.plot(history.history['acc'])
+    plt.plot(history.history['val_acc'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='best')
+    plt.show()
