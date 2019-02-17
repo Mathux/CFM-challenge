@@ -44,8 +44,8 @@ class Data:
         self.x_test = features.add_features(
             self.x_test, embeddings=embeddings, ewma=ewma)
 
-        # print("mem self.x:", id(self.x))
-        # print(self.x.keys())
+        if verbose:
+            print("Features added!")
 
         if scaler is not None:
             if scaler == 'StandardScaler':
@@ -62,8 +62,8 @@ class Data:
                     scaled_columns] = sklearn.preprocessing.StandardScaler(
                     ).fit_transform(self.x_test[scaled_columns])
 
-        if verbose:
-            print("Features added!")
+        self.nunique = self.x['eqt_code'].nunique()
+
         if split:
             print("Split the dataset...")
 

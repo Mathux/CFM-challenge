@@ -25,40 +25,53 @@ from processing_data import Data
 
 class LSTMModel(object):
     def __init__(self,
-                 X,
-                 y,
+                 data,
                  eqt_embeddings_size=80,
                  lstm_out_dim=64,
                  use_lstm=True,
-                 dropout_rate=0.5,
+                 dropout_rate=0.8,
+                 dropout_spatial_rate=0.5,
+                 dropout_lstm=0.3,
+                 dropout_lstm_rec=0.3,
                  kernel_size=3,
                  loss='binary_crossentropy',
                  optimizer=None):
-        self.X, self.y = X, y
+        self.data = data
         self.eqt_embeddings_size = eqt_embeddings_size
-        self.n_eqt = X['eqt_code'].nunique()
-        self.return_cols = [c for c in X.columns if c.endswith(':00')]
+        self.n_eqt = self.data.nunique
+        self.return_cols = [
+            c for c in data.train.data.columns if c.endswith(':00')
+        ]
         self.non_return_cols = [
-            c for c in X.columns if (not c.endswith(':00')) and (
+            c for c in data.train.data.columns if (not c.endswith(':00')) and (
                 c not in
                 ['ID', 'eqt_code', 'date', 'Unnamed: 0_x', 'Unnamed: 0_y'])
         ]
         self.returns_length = len(self.return_cols)
         self.lstm_out_dim = lstm_out_dim
         self.use_lstm = use_lstm
+        
         self.dropout_rate = dropout_rate
+        self.dropout_spatial_rate = dropout_spatial_rate
+        
+        self.dropout_lstm = dropout_lstm
+        self.dropout_lstm_rec = dropout_lstm_rec
+        
         self.kernel_size = kernel_size
         self.loss = loss
         self.optimizer = optimizer
         self.model = self.create_model()
 
         self.config = {
-            "eqt_embeddings_size": eqt_embeddings_size,
-            "lstm_out_dim": lstm_out_dim,
-            "use_lstm": use_lstm,
-            "dropout_rate": dropout_rate,
-            "kernel_size": kernel_size,
-            "loss": loss
+            "eqt_embeddings_size": self.eqt_embeddings_size,
+            "lstm_out_dim": self.lstm_out_dim,
+            "use_lstm": self.use_lstm,
+            "dropout_rate": self.dropout_rate,
+            "dropout_spatial_rate": self.dropout_spatial_rate,
+            "droupout_lstm": self.dropout_lstm,
+            "droupout_lstm_rec": self.dropout_lstm_rec,
+            "kernel_size": self.kernel_size,
+            "loss": self.loss
         }
 
     def create_model(self):
@@ -70,7 +83,7 @@ class LSTMModel(object):
             input_dim=self.n_eqt + 1,
             input_length=1,
             name='eqt_embeddings')(eqt_code_input)
-        eqt_emb = SpatialDropout1D(0.3)(eqt_emb)
+        eqt_emb = SpatialDropout1D(self.dropout_spatial_rate)(eqt_emb)
         eqt_emb = Flatten()(eqt_emb)
 
         # Then the LSTM/CNN1D for the returns time series
@@ -78,8 +91,10 @@ class LSTMModel(object):
             shape=(self.returns_length, 1), name='returns_input')
 
         if self.use_lstm:
-            returns_lstm = JANET(
-                self.lstm_out_dim, return_sequences=False)(returns_input)
+            returns_lstm = JANET(self.lstm_out_dim,
+                                 return_sequences = False,
+                                 dropout = 0.3,
+                                 recurrent_dropout = 0.3)(returns_input)
         else:
             returns_lstm = Conv1D(
                 filters=self.lstm_out_dim,
@@ -142,37 +157,33 @@ class LSTMModel(object):
             outputs=[output])
         return model
 
-    def process_data(self):
-        X_train, X_val, y_train, y_val = utils.split_dataset(self.X, self.y)
-        input_train = []
-        input_val = []
-        y_train = to_categorical(
-            y_train.drop('ID', axis=1)['end_of_day_return'].values)
-        y_val = to_categorical(
-            y_val.drop('ID', axis=1)['end_of_day_return'].values)
+    def process_data(self, data, labels=None):
+        input_data = []
 
         temp_eqt = LabelEncoder()
-        temp_eqt.fit(X_train['eqt_code'].values)
-        input_train.append(temp_eqt.transform(X_train['eqt_code'].values))
-        input_val.append(temp_eqt.transform(X_val['eqt_code'].values))
-        temp_returns = X_train[self.return_cols].values
+        temp_eqt.fit(data['eqt_code'].values)
+
+        input_data.append(temp_eqt.transform(data['eqt_code'].values))
+
+        temp_returns = data[self.return_cols].values
         temp_returns = temp_returns.reshape((temp_returns.shape[0],
                                              temp_returns.shape[1], 1))
-        input_train.append(temp_returns)
-        temp_returns = X_val[self.return_cols].values
-        temp_returns = temp_returns.reshape((temp_returns.shape[0],
-                                             temp_returns.shape[1], 1))
-        input_val.append(temp_returns)
-        temp_vol = np.abs(X_train[self.return_cols].values)
+        input_data.append(temp_returns)
+
+        temp_vol = np.abs(data[self.return_cols].values)
         temp_vol = temp_vol.reshape((temp_vol.shape[0], temp_vol.shape[1], 1))
-        input_train.append(temp_vol)
-        temp_vol = np.abs(X_val[self.return_cols].values)
-        temp_vol = temp_vol.reshape((temp_vol.shape[0], temp_vol.shape[1], 1))
-        input_val.append(temp_vol)
-        input_train.append(X_train[self.non_return_cols].values)
-        input_val.append(X_val[self.non_return_cols].values)
+        input_data.append(temp_vol)
+
+        input_data.append(data[self.non_return_cols].values)
         del temp_returns, temp_vol
-        return input_train, y_train, input_val, y_val
+
+        if labels is not None:
+            labels = to_categorical(
+                labels.drop('ID', axis=1)['end_of_day_return'].values)
+
+            return input_data, labels
+        else:
+            return input_data
 
     def compile_fit(self,
                     checkpointname,
@@ -241,7 +252,10 @@ class LSTMModel(object):
         self.model.compile(
             optimizer=opti, loss=self.loss, metrics=conf["metrics"])
 
-        X_train, y_train, X_val, y_val = self.process_data()
+        X_train, y_train = self.process_data(self.data.train.data,
+                                             self.data.train.labels)
+        X_val, y_val = self.process_data(self.data.val.data,
+                                         self.data.val.labels)
 
         conf["epochs"] = epochs
         conf["batch_size"] = batch_size
@@ -257,6 +271,16 @@ class LSTMModel(object):
 
         self.learning_config = conf
         return history
+
+    # Not tested yet, do not use
+    def predict_test(self, csvname):
+        from utils import submission
+        X_test = self.process_data(self.data.test.data)
+
+        # dim=(n, 2) should be (n,)
+        # predictions = np.argmax(self.model.predict(X_test), axis=1)
+        predictions = self.model.predict(X_test)
+        submission(predictions, ID=self.data.test.data["ID"], name=csvname)
 
 
 def plot_training(history, show=True, losspath=None, accpath=None):
@@ -288,22 +312,21 @@ def plot_training(history, show=True, losspath=None, accpath=None):
 
 if __name__ == '__main__':
     from experiment import Experiment
-    exp = Experiment(modelname="janet")
+    exp = Experiment(modelname="janet_droupout")
 
     data = Data(verbose=True)
     exp.addconfig("data", data.config)
 
-    X, y = data.train.data, data.train.labels
-
-    model = LSTMModel(X, y, use_lstm=True)
+    model = LSTMModel(data, use_lstm=True)
     exp.addconfig("model", model.config)
 
     plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
 
+    # Fit the model
     history = model.compile_fit(
         checkpointname=exp.modelname,
-        epochs=150,
-        plateau_patience=20,
+        epochs=100,
+        plateau_patience=10,
         verbose=1)
 
     exp.addconfig("learning", model.learning_config)
@@ -311,3 +334,7 @@ if __name__ == '__main__':
 
     plot_training(
         history, show=False, losspath=exp.pngloss, accpath=exp.pngacc)
+
+    # Predict on the test dataset
+    # Do not use yet
+    # model.predict_test(exp.allpath("predictions.csv"))
