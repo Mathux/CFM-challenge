@@ -174,7 +174,11 @@ class LSTMModel(object):
         del temp_returns, temp_vol
         return input_train, y_train, input_val, y_val
 
-    def compile_fit(self, checkpointname, epochs=30, batch_size=128,
+    def compile_fit(self,
+                    checkpointname,
+                    epochs=30,
+                    plateau_patience=20,
+                    batch_size=128,
                     verbose=0):
 
         conf = {}
@@ -222,7 +226,7 @@ class LSTMModel(object):
         conf["ReduceLROnPlateau"] = {
             "monitor": "val_loss",
             "factor": 0.99,
-            "patience": 30,
+            "patience": plateau_patience,
             "min_lr": 0.000001
         }
 
@@ -286,7 +290,7 @@ if __name__ == '__main__':
     from experiment import Experiment
     exp = Experiment(modelname="janet")
 
-    data = Data(small=True, verbose=True)
+    data = Data(verbose=True)
     exp.addconfig("data", data.config)
 
     X, y = data.train.data, data.train.labels
@@ -297,7 +301,10 @@ if __name__ == '__main__':
     plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
 
     history = model.compile_fit(
-        checkpointname=exp.modelname, epochs=30, verbose=1)
+        checkpointname=exp.modelname,
+        epochs=150,
+        plateau_patience=20,
+        verbose=1)
 
     exp.addconfig("learning", model.learning_config)
     exp.saveconfig(verbose=True)
