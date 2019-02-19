@@ -63,7 +63,8 @@ class Data:
                     ).fit_transform(self.x_test[scaled_columns])
 
         self.nunique = self.x['eqt_code'].nunique()
-
+        self.eqt_list = list(self.x['eqt_code'].unique())
+        
         if split:
             print("Split the dataset...")
 

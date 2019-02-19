@@ -75,7 +75,6 @@ class LSTMModel(object):
         }
 
     def create_model(self):
-
         # First create the eqt embeddings
         eqt_code_input = Input(shape=[1], name='eqt_code_input')
         eqt_emb = Embedding(
@@ -272,15 +271,15 @@ class LSTMModel(object):
         self.learning_config = conf
         return history
 
-    # Not tested yet, do not use
-    def predict_test(self, csvname):
+    def predict_test(self, bincsv, probacsv):
         from utils import submission
         X_test = self.process_data(self.data.test.data)
-
-        # dim=(n, 2) should be (n,)
-        # predictions = np.argmax(self.model.predict(X_test), axis=1)
         predictions = self.model.predict(X_test)
-        submission(predictions, ID=self.data.test.data["ID"], name=csvname)
+        bin_pred = np.argmax(predictions, axis=1)
+        proba_pred = predictions[:, 1]
+
+        submission(bin_pred, ID=self.data.test.data["ID"], name=bincsv)
+        submission(proba_pred, ID=self.data.test.data["ID"], name=probacsv)
 
 
 def plot_training(history, show=True, losspath=None, accpath=None):
@@ -336,5 +335,5 @@ if __name__ == '__main__':
         history, show=False, losspath=exp.pngloss, accpath=exp.pngacc)
 
     # Predict on the test dataset
-    # Do not use yet
-    # model.predict_test(exp.allpath("predictions.csv"))
+    model.predict_test(bincsv=exp.allpath("predictions_bin.csv"),
+                       probacsv=exp.allpath("predictions_proba.csv"))
