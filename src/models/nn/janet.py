@@ -17,7 +17,7 @@ from keras.engine import InputSpec
 from keras.utils.generic_utils import has_arg
 from keras.utils.generic_utils import get_custom_objects
 
-from chrono_initializer import ChronoInitializer
+from src.models.nn.chrono_initializer import ChronoInitializer
 
 
 class JANETCell(Layer):

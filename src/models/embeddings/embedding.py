@@ -6,8 +6,8 @@ from keras.layers import Dense, LSTM, Bidirectional, TimeDistributed, Reshape
 from keras.models import Sequential
 from sklearn.utils import resample
 
-import config
-from processing_data import Data, Dataset
+import src.config as config
+from src.tools.dataloader import Data, Dataset
 
 
 # Class to do embedding on eqt
@@ -175,7 +175,7 @@ class LessNaiveEmbedding(EqtEmbedding):
 
 
 if __name__ == '__main__':
-    data = Data(verbose=True)
+    data = Data(small=True, verbose=True)
     embeddings_model = LessNaiveEmbedding(data, verbose=True)
     embeddings_model.transform('adam', 'binary_crossentropy')
     embeddings_model.save_embeddings('embeddings.pickle')

@@ -1,8 +1,8 @@
 import sklearn.preprocessing
 
-import features
-import utils
-import config
+import src.tools.features as features
+import src.tools.utils as utils
+import src.config as config
 
 
 class Dataset:
@@ -93,11 +93,5 @@ class Data:
 
 
 if __name__ == '__main__':
-    name = "embeddings/embeddings_naive.pickle"
-    with open(name, 'rb') as handle:
-        import pickle
-        embeddings = pickle.load(handle)
-
-    data = Data(small=True, verbose=True, embeddings=None)
-    # data = pd.DataFrame.from_dict(embeddings)
-    # kmeans = KMeans(n_clusters=10, random_state=0).fit(X)
+    data = Data(small=True, verbose=True)
+    

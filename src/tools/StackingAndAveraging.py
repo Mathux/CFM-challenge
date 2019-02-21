@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
 
-from utils import progressBar
+from src.tools.utils import progressBar
 
 
 class Stacking(object):

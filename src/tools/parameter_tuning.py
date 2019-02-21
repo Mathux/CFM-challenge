@@ -3,15 +3,16 @@
 """
 Created on Thu Jan 31 15:32:05 2019
 
-@author: evrardgarcelon
+@author: evrardgarcelon, mathispetrovich
 """
 
 from scipy.stats import uniform as sp_uniform
 
-import OneStockOnePredictor as OSOP
+import src.models.simplePredictor.simplePredictor as simplePredictor
 import numpy as np
-from processing_data import Data
-from utils import progressBar
+
+from src.tools.dataloader import Data
+from src.tools.utils import progressBar
 
 data = Data(small=True, verbose=True)
 
@@ -25,7 +26,7 @@ for j in range(n_HP_points_to_test):
     progressBar(j, n_HP_points_to_test - 1)
     C = param_test['C'].rvs()
     C_tested.append(C)
-    osop = OSOP(
+    osop = simplePredictor(
         data.train.data,
         data.train.labels,
         C=C,
@@ -33,9 +34,12 @@ for j in range(n_HP_points_to_test):
     train_acc.append(
         np.mean(
             np.array(
-                list(OSOP.score(data.train.data,
-                                data.train.labels).values()))))
+                list(
+                    simplePredictor.score(data.train.data,
+                                          data.train.labels).values()))))
     test_acc.append(
         np.mean(
-            np.array(list(OSOP.score(data.val.data,
-                                     data.test.data).values()))))
+            np.array(
+                list(
+                    simplePredictor.score(data.val.data,
+                                          data.test.data).values()))))

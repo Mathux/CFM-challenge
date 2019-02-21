@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import pylab as plt
 
-import config as conf
+import src.config as conf
 
 from sklearn.decomposition import PCA
 
@@ -117,6 +117,33 @@ def plot_pca(data):
 def create_dir(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+
+def plot_training(history, show=True, losspath=None, accpath=None):
+    plt.figure()
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='best')
+    if losspath:
+        plt.savefig(losspath)
+    if show:
+        plt.show()
+
+    plt.figure()
+    plt.plot(history.history['acc'])
+    plt.plot(history.history['val_acc'])
+    plt.title('model accuracy')
+    plt.ylabel('accuracy')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='best')
+    if accpath:
+        plt.savefig(accpath)
+
+    if show:
+        plt.show()
 
 
 if __name__ == "__main__":

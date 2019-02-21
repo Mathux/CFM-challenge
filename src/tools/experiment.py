@@ -2,7 +2,7 @@ import json
 import datetime as dt
 import os
 
-from utils import create_dir
+from src.tools.utils import create_dir
 
 
 class Experiment():

@@ -11,9 +11,9 @@ import numpy as np
 from scipy.stats import randint as sp_randint, uniform as sp_uniform
 from sklearn import model_selection
 
-from processing_data import Data
+from src.tools.dataloader import Data
 
-data = Data(verbose=True)
+data = Data(small=True, verbose=True)
 
 train_labels = data.train.labels['end_of_day_return']
 val_labels = data.val.labels['end_of_day_return']
