@@ -4,9 +4,9 @@ from sklearn.cluster import KMeans
 
 
 # Extract features from data
-def add_features(data, eps=10**-10, n_cluster=50, embeddings=None, ewma = True):
+def add_features(data, eps=10**-10, n_cluster=50, embeddings=None, ewma = True, aggregate = True):
     #print("mem data:", id(data))
-    # Get usefull columns (data from different hours)
+    # Get useful columns (data from different hours)
     return_cols = [col for col in data.columns if col.endswith(':00')]
 
     # Some stats features
@@ -28,25 +28,27 @@ def add_features(data, eps=10**-10, n_cluster=50, embeddings=None, ewma = True):
     data['09:30:00'].fillna(0, inplace=True)
     data[return_cols] = data[return_cols].interpolate(axis=1)
     
+    if aggregate : 
+        returns = data[return_cols]
+        df_train = pd.DataFrame(
+            np.add.reduceat(
+                returns.values, np.arange(len(returns.columns))[::7], axis=1))
+        df_train.columns = returns.columns[::7]
+        data = data.drop(return_cols, axis=1)
+        new_returns_cols = return_cols[::7]
+        data[new_returns_cols] = df_train
+        
+    return_cols = [col for col in data.columns if col.endswith(':00')]
     if ewma :
         data[return_cols] = data[return_cols].ewm(alpha=0.2, axis=1).mean()
 
-    returns = data[return_cols]
-    df_train = pd.DataFrame(
-        np.add.reduceat(
-            returns.values, np.arange(len(returns.columns))[::7], axis=1))
-    df_train.columns = returns.columns[::7]
-    data = data.drop(return_cols, axis=1)
-    new_returns_cols = return_cols[::7]
-    data[new_returns_cols] = df_train
-
-    data['difference_to_market'] = data['15:20:00'] - data[
+    data['difference_to_market'] = data[return_cols[-1]] - data[
         'avg_market_return_date']
-    data['return_trend'] = data['15:20:00'] - data['09:30:00']
+    data['return_trend'] = data[return_cols[-1]] - data[return_cols[0]]
     data['log_vol_difference_to_market'] = np.log(
-        np.abs(data['15:20:00'] + eps)) - data['avg_market_log_vol_date']
-    data['log_vol_trend'] = np.log(np.abs(data['15:20:00'] + eps)) - np.log(
-        np.abs(data['09:30:00'] + eps))
+        np.abs(data[return_cols[-1]] + eps)) - data['avg_market_log_vol_date']
+    data['log_vol_trend'] = np.log(np.abs(data[return_cols[-1]] + eps)) - np.log(
+        np.abs(data[return_cols[0]] + eps))
 
     if embeddings:
         sectors = get_sector(embeddings, n_clusters=n_cluster)

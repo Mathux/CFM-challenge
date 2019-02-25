@@ -21,7 +21,8 @@ class Data:
                  verbose=False,
                  small=False,
                  embeddings=None,
-                 ewma=False):
+                 ewma=False,
+                 aggregate = True):
         if small:
             print("Warning! Using small datasets..")
 
@@ -40,9 +41,9 @@ class Data:
 
         # print("mem self.x:", id(self.x))
         self.x = features.add_features(
-            self.x, embeddings=embeddings, ewma=ewma)
+            self.x, embeddings=embeddings, ewma=ewma, aggregate = aggregate)
         self.x_test = features.add_features(
-            self.x_test, embeddings=embeddings, ewma=ewma)
+            self.x_test, embeddings=embeddings, ewma=ewma, aggregate = aggregate)
 
         if verbose:
             print("Features added!")
@@ -95,3 +96,4 @@ class Data:
 if __name__ == '__main__':
     data = Data(small=True, verbose=True)
     
+#%%

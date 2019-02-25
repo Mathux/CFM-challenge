@@ -15,7 +15,7 @@ import pylab as plt
 
 import src.config as conf
 
-from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
 
 # Create a small dataset
@@ -107,9 +107,9 @@ def progressBar(value, endvalue, bar_length=50):
     sys.stdout.flush()
 
 
-def plot_pca(data):
-    pca = PCA(n_components=2)
-    X_r = pca.fit(data).transform(data)
+def plot_tsne(data):
+    tsne = TSNE(n_components=2)
+    X_r = tsne.fit_transform(data)
     plt.scatter(X_r[:, 0], X_r[:, 1])
     plt.show()
 
