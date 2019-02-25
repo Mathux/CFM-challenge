@@ -85,6 +85,32 @@ def split_dataset(data, labels, split_val=0.1, seed=conf.SEED):
     return train, val, train_labels, val_labels
 
 
+# Split the train dataset into kfolds
+def kfold_split_dataset(data, labels, k, seed=conf.SEED):
+    np.random.seed(seed)
+
+    data = data.merge(labels, on='ID')
+
+    dates = data["date"].unique().copy()
+    n_dates = len(dates)
+    all_index = np.arange(n_dates)
+    np.random.shuffle(all_index)
+
+    nb_el_per_fold = int(n_dates//k)
+    folds = []
+    folds_label = []
+    for i in range(k):
+        fold_index = all_index[nb_el_per_fold*i:nb_el_per_fold*(i+1)]
+        fold = data[data["date"].isin(dates[fold_index])]
+        fold_labels = fold[['ID', 'end_of_day_return']]
+        fold = fold.drop('end_of_day_return', axis=1)
+
+        folds.append(fold)
+        folds_label.append(fold_labels)
+
+    return folds, folds_label
+
+
 # Tools to give the csv format
 def submission(prediction, ID=None, name="predictions.csv"):
     if isinstance(prediction, pd.core.frame.DataFrame):

@@ -15,6 +15,7 @@ class Data:
     def __init__(self,
                  d=233,
                  split=True,
+                 kfold=-1,
                  split_val=0.1,
                  scaler='StandardScaler',
                  seed=config.SEED,
@@ -22,7 +23,7 @@ class Data:
                  small=False,
                  embeddings=None,
                  ewma=False,
-                 aggregate = True):
+                 aggregate=True):
         if small:
             print("Warning! Using small datasets..")
 
@@ -41,9 +42,9 @@ class Data:
 
         # print("mem self.x:", id(self.x))
         self.x = features.add_features(
-            self.x, embeddings=embeddings, ewma=ewma, aggregate = aggregate)
+            self.x, embeddings=embeddings, ewma=ewma, aggregate=aggregate)
         self.x_test = features.add_features(
-            self.x_test, embeddings=embeddings, ewma=ewma, aggregate = aggregate)
+            self.x_test, embeddings=embeddings, ewma=ewma, aggregate=aggregate)
 
         if verbose:
             print("Features added!")
@@ -65,11 +66,18 @@ class Data:
 
         self.nunique = self.x['eqt_code'].nunique()
         self.eqt_list = list(self.x['eqt_code'].unique())
-        
-        if split:
-            print("Split the dataset...")
 
-            self.split(split_val, seed)
+        if split:
+            if verbose:
+                print("Split the dataset...")
+
+            if kfold > 0:
+                if verbose:
+                    print("Using kfold with k=", kfold)
+                self.split(split_val, seed, kfold=kfold)
+            else:
+                self.split(split_val, seed)
+
             if verbose:
                 print("Dataset splitted!")
 
@@ -78,22 +86,31 @@ class Data:
         if verbose:
             print("Data loading done!")
 
-        self.config = {"split": split,
-                       "split_val": split_val,
-                       "scaler": scaler,
-                       "seed": seed,
-                       "small": small,
-                       "embeddings": embeddings,
-                       "ewma": ewma}
-        
-    def split(self, split_val, seed):
-        train, val, train_labels, val_labels = utils.split_dataset(
-            self.x, self.labels, split_val, seed)
-        self.train = Dataset(train, train_labels)
-        self.val = Dataset(val, val_labels)
+        self.config = {
+            "split": split,
+            "split_val": split_val,
+            "kfold": kfold,
+            "scaler": scaler,
+            "seed": seed,
+            "small": small,
+            "embeddings": embeddings,
+            "ewma": ewma
+        }
+
+    def split(self, split_val, seed, kfold=None):
+        if kfold is None:
+            train, val, train_labels, val_labels = utils.split_dataset(
+                self.x, self.labels, split_val, seed)
+            self.train = Dataset(train, train_labels)
+            self.val = Dataset(val, val_labels)
+
+        else:
+            folds, folds_label = utils.kfold_split_dataset(
+                self.x, self.labels, kfold, seed)
+            self.folds = []
+            for f, fl in zip(folds, folds_label):
+                self.folds.append(Dataset(f, fl))
 
 
 if __name__ == '__main__':
-    data = Data(small=True, verbose=True)
-    
-#%%
+    data = Data(small=True, verbose=True, kfold=4)
