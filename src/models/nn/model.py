@@ -215,8 +215,6 @@ class GeneralModel:
                 verbose=verbose)
 
             return early_stop, checkpointer, reduce_lr
-
-        early_stop, checkpointer, reduce_lr = callbacks_intrain()
         
         conf["ModelCheckpoint"] = {
             "save_best_only": True,
@@ -232,6 +230,8 @@ class GeneralModel:
 
         conf["metrics"] = ["acc"]
 
+        early_stop, checkpointer, reduce_lr = callbacks_intrain()
+                
         self.model.compile(
             optimizer=opti,
             loss={'output': self.loss},
