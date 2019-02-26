@@ -209,6 +209,7 @@ if __name__ == '__main__':
         checkpointname=exp.modelname,
         epochs=EPOCHS,
         plateau_patience=5,
+        stop_patience=10,
         verbose=1,
         kfold=KFOLDS,
         batch_size=4092)

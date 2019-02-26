@@ -168,6 +168,7 @@ class GeneralModel:
                     checkpointname,
                     epochs=50,
                     plateau_patience=10,
+                    stop_patience=15,
                     batch_size=8192,
                     verbose=0,
                     kfold=None):
@@ -192,7 +193,7 @@ class GeneralModel:
             # add config
             opti = self.optimizer
 
-        conf["EarlyStopping"] = {"monitor": "val_loss", "patience": 30}
+        conf["EarlyStopping"] = {"monitor": "val_loss", "patience": stop_patience}
 
         def callbacks_intrain():
             early_stop = EarlyStopping(

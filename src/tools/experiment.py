@@ -38,13 +38,13 @@ class Experiment():
         if verbose:
             print("The experiment is written in " + self.folder)
             
-    def _pngloss(k=None):
+    def _pngloss(self, k=None):
         if k is None:
             return self.pngloss
         else:
             return self.allpath("loss_" + str(k) + ".png")
         
-    def _pngacc(k=None):
+    def _pngacc(self, k=None):
         if k is None:
             return self.pngacc
         else:
