@@ -98,18 +98,30 @@ class Data:
         }
 
     def split(self, split_val, seed, kfold=None):
-        if kfold is None:
-            train, val, train_labels, val_labels = utils.split_dataset(
-                self.x, self.labels, split_val, seed)
-            self.train = Dataset(train, train_labels)
-            self.val = Dataset(val, val_labels)
+        self.kfold = kfold
 
-        else:
+        # keep that for compatibility
+        train, val, train_labels, val_labels = utils.split_dataset(
+            self.x, self.labels, split_val, seed)
+        self.train = Dataset(train, train_labels)
+        self.val = Dataset(val, val_labels)
+
+        if kfold is not None:
             folds, folds_label = utils.kfold_split_dataset(
                 self.x, self.labels, kfold, seed)
             self.folds = []
             for f, fl in zip(folds, folds_label):
                 self.folds.append(Dataset(f, fl))
+
+    def merge_folds(self, k):
+        import pandas as pd
+        data = pd.concat(
+            tuple(
+                [self.folds[i].data for i in range(self.kfold) if not i == k]))
+        labels = pd.concat(
+            tuple(
+                [self.folds[i].labels for i in range(self.kfold) if not i == k]))
+        return data, labels
 
 
 if __name__ == '__main__':

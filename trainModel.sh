@@ -1,1 +1,1 @@
-python -im src.models.nn.smallLSTM
+python -im src.models.nn.NotSoSmallLSTM
