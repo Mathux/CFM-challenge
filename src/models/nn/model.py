@@ -169,7 +169,8 @@ class GeneralModel:
                     epochs=50,
                     plateau_patience=10,
                     batch_size=8192,
-                    verbose=0):
+                    verbose=0,
+                    kfold=None):
 
         conf = {}
 
@@ -230,23 +231,44 @@ class GeneralModel:
             metrics={'output': conf["metrics"]},
             loss_weights=[1])
 
-        X_train, y_train = self.process_data(self.data.train.data,
-                                             self.data.train.labels)
-        X_val, y_val = self.process_data(self.data.val.data,
-                                         self.data.val.labels)
-
         conf["epochs"] = epochs
         conf["batch_size"] = batch_size
 
-        history = self.model.fit(
-            X_train,
-            y_train,
-            epochs=conf["epochs"],
-            batch_size=conf["batch_size"],
-            verbose=verbose,
-            validation_data=(X_val, y_val),
-            callbacks=[checkpointer, early_stop, reduce_lr])
+        if kfold is None:
+            X_train, y_train = self.process_data(self.data.train.data,
+                                                 self.data.train.labels)
+            X_val, y_val = self.process_data(self.data.val.data,
+                                             self.data.val.labels)
 
+            history = self.model.fit(
+                X_train,
+                y_train,
+                epochs=conf["epochs"],
+                batch_size=conf["batch_size"],
+                verbose=verbose,
+                validation_data=(X_val, y_val),
+                callbacks=[checkpointer, early_stop, reduce_lr])
+        else:
+            for k in range(kfold):
+                if verbose:
+                    print("Training on the fold ", k)
+                X_train, y_train = self.data.merge_folds(k)
+                X_train, y_train = self.process_data(X_train,
+                                                     y_train)
+                
+                X_val, y_val = self.process_data(self.data.folds[k].data,
+                                                 self.data.folds[k].labels)
+                history = self.model.fit(
+                    X_train,
+                    y_train,
+                    epochs=conf["epochs"],
+                    batch_size=conf["batch_size"],
+                    verbose=verbose,
+                    validation_data=(X_val, y_val),
+                    callbacks=[checkpointer, early_stop, reduce_lr])
+                # Load the best model
+                self.model.load_weights(checkpointname)
+                
         self.learning_config = conf
         return history
 
