@@ -259,6 +259,13 @@ class GeneralModel:
                 
                 X_val, y_val = self.process_data(self.data.folds[k].data,
                                                  self.data.folds[k].labels)
+
+                self.model.compile(
+                    optimizer=opti,
+                    loss={'output': self.loss},
+                    metrics={'output': conf["metrics"]},
+                    loss_weights=[1])
+                        
                 hist = self.model.fit(
                     X_train,
                     y_train,
@@ -267,6 +274,7 @@ class GeneralModel:
                     verbose=verbose,
                     validation_data=(X_val, y_val),
                     callbacks=[checkpointer, early_stop, reduce_lr])
+                
                 history.append(hist)
                 # Load the best model
                 self.model.load_weights(checkpointname)
