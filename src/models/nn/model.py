@@ -268,6 +268,12 @@ class GeneralModel:
                 X_val, y_val = self.process_data(self.data.folds[k].data,
                                                  self.data.folds[k].labels)
 
+                opti = RMSprop(
+                    lr=conf["optimizer"]["lr"],
+                    rho=conf["optimizer"]["rho"],
+                    epsilon=conf["optimizer"]["epsilon"],
+                    decay=conf["optimizer"]["decay"])
+                            
                 self.model.compile(
                     optimizer=opti,
                     loss={'output': self.loss},

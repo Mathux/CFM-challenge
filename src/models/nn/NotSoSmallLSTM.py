@@ -221,7 +221,7 @@ if __name__ == '__main__':
             history,
             show=False,
             losspath=exp._pngloss(el + 1),
-            accpath=exp._accloss(el + 1))
+            accpath=exp._pngacc(el + 1))
 
     model.create_submission(
         exp.modelname,
