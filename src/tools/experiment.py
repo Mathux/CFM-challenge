@@ -37,7 +37,18 @@ class Experiment():
             f.write(conf)
         if verbose:
             print("The experiment is written in " + self.folder)
-
+            
+    def _pngloss(k=None):
+        if k is None:
+            return self.pngloss
+        else:
+            return self.allpath("loss_" + str(k) + ".png")
+        
+    def _pngacc(k=None):
+        if k is None:
+            return self.pngacc
+        else:
+            return self.allpath("acc_" + str(k) + ".png")
 
 if __name__ == "__main__":
     exp = Experiment(modelname="testmodel")

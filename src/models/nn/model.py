@@ -235,6 +235,7 @@ class GeneralModel:
                 validation_data=(X_val, y_val),
                 callbacks=[checkpointer, early_stop, reduce_lr])
         else:
+            history = []
             for k in range(kfold):
                 if verbose:
                     print("Training on the fold ", k)
@@ -244,7 +245,7 @@ class GeneralModel:
                 
                 X_val, y_val = self.process_data(self.data.folds[k].data,
                                                  self.data.folds[k].labels)
-                history = self.model.fit(
+                hist = self.model.fit(
                     X_train,
                     y_train,
                     epochs=conf["epochs"],
@@ -252,6 +253,7 @@ class GeneralModel:
                     verbose=verbose,
                     validation_data=(X_val, y_val),
                     callbacks=[checkpointer, early_stop, reduce_lr])
+                history.append(hist)
                 # Load the best model
                 self.model.load_weights(checkpointname)
                 
@@ -262,7 +264,7 @@ class GeneralModel:
         from src.tools.utils import submission
         # Load the best model
         self.model.load_weights(modelname)
-        X_test = self.process_data(self.data.test.data, self.dataconfig)
+        X_test = self.process_data(self.data.test.data)
         predictions = self.model.predict(X_test)
         bin_pred = np.argmax(predictions, axis=1)
         proba_pred = predictions[:, 1]

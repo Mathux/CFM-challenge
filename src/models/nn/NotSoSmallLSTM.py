@@ -211,17 +211,17 @@ if __name__ == '__main__':
 
     exp = Experiment(modelname="not_so_small_janet")
     data = Data(
-        small=True, kfold=KFOLDS, verbose=True, ewma=False, aggregate=True)
+        small=False, kfold=KFOLDS, verbose=True, ewma=False, aggregate=True)
     exp.addconfig("data", data.config)
 
     model = NotSoSmallLSTM(data, use_lstm=True)
     exp.addconfig("model", model.config)
 
-    plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
+    #plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
 
     model.model.summary()
     # Fit the model
-    history = model.compile_fit(
+    histories = model.compile_fit(
         kfold=KFOLDS,
         checkpointname=exp.modelname,
         epochs=50,
@@ -230,8 +230,8 @@ if __name__ == '__main__':
 
     exp.addconfig("learning", model.learning_config)
     exp.saveconfig(verbose=True)
+    for el, history in enumerate(histories):
+        plot_training(
+            history, show=False, losspath=exp._pngloss(el+1), accpath=exp._accloss(el+1))
 
-    plot_training(
-        history, show=False, losspath=exp.pngloss, accpath=exp.pngacc)
-
-    model.predict_test(exp.allpath("predictions.csv"))
+    model.create_submission(exp.modelname, bincsv=exp.allpath("predictions_bin.csv"), probacsv=exp.allpath("predictions_proba.csv"))
