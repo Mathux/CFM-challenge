@@ -46,7 +46,6 @@ class NotSoSmallLSTM(GeneralLSTM):
         self.model, self.inputnames = self.create_model()
 
     def create_model(self):
-        # First create the eqt embeddings
         eqt_code_input = Input(shape=[1], name='eqt_code_input')
         eqt_emb = Embedding(
             output_dim=self.eqt_embeddings_size,
@@ -111,10 +110,8 @@ class NotSoSmallLSTM(GeneralLSTM):
         returns_features = concatenate([market_returns_input,
                                         return_diff_to_market_input,
                                         returns_input,
-                                        eqt_avg_returns_input
-                                        ])
-    
-        log_vol_features = concatenate([market_log_vol_input,
+                                        eqt_avg_returns_input,
+                                        market_log_vol_input,
                                         log_vol_diff_to_market_input,
                                         log_vol_input,
                                         eqt_avg_log_vol_input
@@ -125,38 +122,21 @@ class NotSoSmallLSTM(GeneralLSTM):
             return_sequences=False,
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = True)(returns_input)
-        
-        log_vol_features_lstm = JANET(
-            self.lstm_out_dim,
-            return_sequences=False,
-            dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = True)(log_vol_input)
-        
+                
         eqt_market_returns_features_lstm = JANET(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = True)(returns_features)
         
-        eqt_market_log_vol_features_lstm = JANET(
-            self.lstm_out_dim,
-            return_sequences=False,
-            dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = True)(log_vol_features)
-        
         eqt_market_returns = concatenate([returns_features_lstm,eqt_market_returns_features_lstm])
         eqt_market_returns = Dense(256,activation = 'linear')(eqt_market_returns)
         eqt_market_returns = PReLU()(eqt_market_returns)
         eqt_market_returns = BatchNormalization()(eqt_market_returns)
         
-        eqt_market_log_vol = concatenate([log_vol_features_lstm,eqt_market_log_vol_features_lstm])
-        eqt_market_log_vol = Dense(256,activation = 'linear')(eqt_market_log_vol)
-        eqt_market_log_vol = PReLU()(eqt_market_log_vol)
-        eqt_market_log_vol = BatchNormalization()(eqt_market_log_vol)
-        
     
         x = concatenate([returns_features_lstm, eqt_market_returns_features_lstm, context_eqt_day, 
-                         log_vol_features_lstm, eqt_market_log_vol_features_lstm])
+                        ])
         
         x = Dense(256,activation = 'linear')(x)
         
@@ -213,7 +193,11 @@ if __name__ == '__main__':
     from keras.utils import plot_model
     
     exp = Experiment(modelname="not_small_janet")
-    data = Data(small=False, verbose=True, ewma = False, aggregate = False)
+    data = Data(small=False, 
+                verbose=True, 
+                ewma = False, 
+                aggregate = False, 
+                kfold = 3)
     exp.addconfig("data", data.config)
 
     model = NotSoSmallLSTM(data, use_lstm=True)
@@ -224,7 +208,12 @@ if __name__ == '__main__':
     model.model.summary()
     # Fit the model
     history = model.compile_fit(
-        checkpointname=exp.modelname, epochs=50, plateau_patience=5, verbose=1)
+        checkpointname=exp.modelname, 
+        epochs=50, 
+        plateau_patience=5, 
+        verbose=1, 
+        kfold = 3, 
+        batch_size = 4092)
 
     exp.addconfig("learning", model.learning_config)
     exp.saveconfig(verbose=True)
@@ -232,6 +221,7 @@ if __name__ == '__main__':
     plot_training(
         history, show=False, losspath=exp.pngloss, accpath=exp.pngacc)
 
-    #model.predict_test(exp.allpath("predictions.csv"))
+    # model.create_submission(exp.allpath("predictions.csv"),'end_of_day_return'
+    # ,'end_of_day_return')
 
 #%%
