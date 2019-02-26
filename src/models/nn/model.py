@@ -194,20 +194,34 @@ class GeneralModel:
 
         conf["EarlyStopping"] = {"monitor": "val_loss", "patience": 30}
 
-        early_stop = EarlyStopping(
-            monitor=conf["EarlyStopping"]['monitor'],
-            patience=conf["EarlyStopping"]["patience"],
-            verbose=verbose)
+        def callbacks_intrain():
+            early_stop = EarlyStopping(
+                monitor=conf["EarlyStopping"]['monitor'],
+                patience=conf["EarlyStopping"]["patience"],
+                verbose=verbose)
+            
+            checkpointer = ModelCheckpoint(
+                filepath=checkpointname,
+                verbose=verbose,
+                save_best_only=conf["ModelCheckpoint"]["save_best_only"],
+                save_weights_only=conf["ModelCheckpoint"]["save_weights_only"])
 
+            
+            reduce_lr = ReduceLROnPlateau(
+                monitor=conf["ReduceLROnPlateau"]["monitor"],
+                factor=conf["ReduceLROnPlateau"]["factor"],
+                patience=conf["ReduceLROnPlateau"]["patience"],
+                min_lr=conf["ReduceLROnPlateau"]["min_lr"],
+                verbose=verbose)
+
+            return early_stop, checkpointer, reduce_lr
+
+        early_stop, checkpointer, reduce_lr = callbacks_intrain()
+        
         conf["ModelCheckpoint"] = {
             "save_best_only": True,
             "save_weights_only": True
         }
-        checkpointer = ModelCheckpoint(
-            filepath=checkpointname,
-            verbose=verbose,
-            save_best_only=conf["ModelCheckpoint"]["save_best_only"],
-            save_weights_only=conf["ModelCheckpoint"]["save_weights_only"])
 
         conf["ReduceLROnPlateau"] = {
             "monitor": "val_loss",
@@ -215,13 +229,6 @@ class GeneralModel:
             "patience": plateau_patience,
             "min_lr": 10**-20
         }
-
-        reduce_lr = ReduceLROnPlateau(
-            monitor=conf["ReduceLROnPlateau"]["monitor"],
-            factor=conf["ReduceLROnPlateau"]["factor"],
-            patience=conf["ReduceLROnPlateau"]["patience"],
-            min_lr=conf["ReduceLROnPlateau"]["min_lr"],
-            verbose=verbose)
 
         conf["metrics"] = ["acc"]
 
@@ -265,7 +272,9 @@ class GeneralModel:
                     loss={'output': self.loss},
                     metrics={'output': conf["metrics"]},
                     loss_weights=[1])
-                        
+
+                early_stop, checkpointer, reduce_lr = callbacks_intrain()
+                
                 hist = self.model.fit(
                     X_train,
                     y_train,

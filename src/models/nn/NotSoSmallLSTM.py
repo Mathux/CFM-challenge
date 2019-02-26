@@ -190,10 +190,11 @@ if __name__ == '__main__':
     from src.tools.utils import plot_training
 
     KFOLDS = 5
-
+    EPOCHS = 150
+    
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=False, verbose=True, ewma=False, aggregate=False, kfold=3)
+        small=False, verbose=True, ewma=False, aggregate=False, kfold=KFOLDS)
 
     exp.addconfig("data", data.config)
 
@@ -206,7 +207,7 @@ if __name__ == '__main__':
     # Fit the model
     histories = model.compile_fit(
         checkpointname=exp.modelname,
-        epochs=50,
+        epochs=EPOCHS,
         plateau_patience=5,
         verbose=1,
         kfold=KFOLDS,
