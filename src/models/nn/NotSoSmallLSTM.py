@@ -21,7 +21,7 @@ class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
                  eqt_embeddings_size=20,
-                 lstm_out_dim=64,
+                 lstm_out_dim=11,
                  use_lstm=True,
                  dropout_rate=0.5,
                  dropout_spatial_rate=0.5,
@@ -83,6 +83,7 @@ class NotSoSmallLSTM(GeneralLSTM):
         context_eqt_day = Dense(128, activation = 'linear')(context_eqt_day)
         context_eqt_day = PReLU()(context_eqt_day)
         context_eqt_day = Dropout(self.dropout_rate)(context_eqt_day)
+        context_eqt_day = BatchNormalization()(context_eqt_day)
         
         
         returns_input = Input(
@@ -94,22 +95,30 @@ class NotSoSmallLSTM(GeneralLSTM):
         return_diff_to_market_input = Input(
                 shape=(self.returns_length, 1), 
                 name='return_diff_to_market_input')
-        
-        market_kurt_returns_input = Input(
-                shape=(self.returns_length, 1), name='market_kurt_returns_input')
-        
+                
         eqt_avg_returns_input = Input(
                 shape=(self.returns_length, 1), name='eqt_avg_returns_input')
         
-        eqt_kurt_returns_input = Input(
-                shape=(self.returns_length, 1), name='eqt_kurt_returns_input')
+        log_vol_input = Input(shape=(self.returns_length, 1), name='log_vol_input')
+        
+        market_log_vol_input = Input(shape=(self.returns_length, 1), name='market_log_vol_input')
+        
+        log_vol_diff_to_market_input = Input(shape=(self.returns_length, 1), name='log_vol_diff_to_market_input')
+                
+        eqt_avg_log_vol_input = Input(
+                shape=(self.returns_length, 1), name='eqt_avg_log_vol_input')
         
         returns_features = concatenate([market_returns_input,
-                                        market_kurt_returns_input,
                                         return_diff_to_market_input,
                                         returns_input,
-                                        eqt_avg_returns_input,
-                                        eqt_kurt_returns_input])
+                                        eqt_avg_returns_input
+                                        ])
+    
+        log_vol_features = concatenate([market_log_vol_input,
+                                        log_vol_diff_to_market_input,
+                                        log_vol_input,
+                                        eqt_avg_log_vol_input
+                                        ])
                 
         returns_features_lstm = JANET(
             self.lstm_out_dim,
@@ -117,20 +126,39 @@ class NotSoSmallLSTM(GeneralLSTM):
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = True)(returns_input)
         
+        log_vol_features_lstm = JANET(
+            self.lstm_out_dim,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = True)(log_vol_input)
+        
         eqt_market_returns_features_lstm = JANET(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = True)(returns_features)
         
+        eqt_market_log_vol_features_lstm = JANET(
+            self.lstm_out_dim,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = True)(log_vol_features)
+        
         eqt_market_returns = concatenate([returns_features_lstm,eqt_market_returns_features_lstm])
-        eqt_market_returns = Dense(128,activation = 'linear')(eqt_market_returns)
+        eqt_market_returns = Dense(256,activation = 'linear')(eqt_market_returns)
         eqt_market_returns = PReLU()(eqt_market_returns)
+        eqt_market_returns = BatchNormalization()(eqt_market_returns)
         
-       
-        x = concatenate([returns_features_lstm, eqt_market_returns_features_lstm,context_eqt_day])
+        eqt_market_log_vol = concatenate([log_vol_features_lstm,eqt_market_log_vol_features_lstm])
+        eqt_market_log_vol = Dense(256,activation = 'linear')(eqt_market_log_vol)
+        eqt_market_log_vol = PReLU()(eqt_market_log_vol)
+        eqt_market_log_vol = BatchNormalization()(eqt_market_log_vol)
         
-        x = Dense(128,activation = 'linear')(x)
+    
+        x = concatenate([returns_features_lstm, eqt_market_returns_features_lstm, context_eqt_day, 
+                         log_vol_features_lstm, eqt_market_log_vol_features_lstm])
+        
+        x = Dense(256,activation = 'linear')(x)
         
         x = PReLU()(x)
         
@@ -138,7 +166,7 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         x = BatchNormalization()(x)
         
-        x = Dense(64,activation = 'linear')(x)
+        x = Dense(256,activation = 'linear')(x)
         
         x = PReLU()(x)
         
@@ -149,42 +177,6 @@ class NotSoSmallLSTM(GeneralLSTM):
         output = Dense(2,activation = 'softmax',name = 'output')(x)
 
         
-        #log_vol_input = Input(shape=(self.returns_length, 1), name='log_vol_input')
-        #market_log_vol_input = Input(shape=(self.returns_length, 1), name='market_log_vol_input')
-        #log_vol_diff_to_market_input = Input(shape=(self.returns_length, 1), name='log_vol_diff_to_market_input')
-        #kurt_log_vol_input = Input(
-        #        shape=(self.returns_length, 1), name='kurt_returns_input')
-        #log_vol_diff_to_market_input = Input(
-        #       shape=(self.returns_length, 1), 
-        #       name='return_diff_to_market_input')
-        #market_kurt_log_vol_input = Input(
-        #        shape=(self.returns_length, 1), name='market_kurt_returns_input')
-        #eqt_avg_log_vol_input = Input(
-        #        shape=(self.returns_length, 1), name='eqt_avg_returns_input')
-        #eqt_kurt_log_vol_input = Input(
-        #        shape=(self.returns_length, 1), name='eqt_kurt_returns_input')
-        
-        #market_log_vol_features = concatenate([market_log_vol_input,market_kurt_log_vol_input,log_vol_diff_to_market_input])
-        #eqt_log_vol_features = concatenate([log_vol_input,kurt_log_vol_input,eqt_avg_log_vol_input,eqt_kurt_log_vol_input]) 
-
-        #temp = concatenate([eqt_emb_2,vol_input])
-        #log_vol_features_lstm = Bidirectional(LSTM(
-        #    self.lstm_out_dim,
-        #    return_sequences=True,
-        #    dropout=self.dropout_lstm,
-        #    recurrent_dropout=self.dropout_lstm_rec))(log_vol_input)
-        
-        
-        #x = concatenate([returns_features_lstm, log_vol_features_lstm])
-
-        #temporal_features = LSTM(self.lstm_out_dim,return_sequences=False,dropout=self.dropout_lstm,recurrent_dropout=self.dropout_lstm_rec)(x)
-        #pred_temporal = Dense(2, activation='softmax', name='pred_temporal')(temporal_features)
-        
-        #x = concatenate([context_eqt_day,temporal_features,returns_features])
-        #x = Dense(128,activation = 'relu')(x)
-        #x = Dropout(self.dropout_rate)(x)
-        #pred_temporal = Dense(2, activation='sigmoid',name = 'pred_temporal')(x)
-
         model = Model(
             inputs=[eqt_code_input, 
                     nb_eqt_traded_input, 
@@ -192,9 +184,11 @@ class NotSoSmallLSTM(GeneralLSTM):
                     returns_input, 
                     market_returns_input, 
                     return_diff_to_market_input,
-                    market_kurt_returns_input,
                     eqt_avg_returns_input,
-                    eqt_kurt_returns_input],
+                    log_vol_input, 
+                    market_log_vol_input, 
+                    log_vol_diff_to_market_input,
+                    eqt_avg_log_vol_input],
             outputs=[output])
 
         inputs = ["eqt_code_input", 
@@ -203,9 +197,12 @@ class NotSoSmallLSTM(GeneralLSTM):
                   "returns_input", 
                   "market_returns_input",
                   "return_diff_to_market_input",
-                  "market_kurt_returns",
-                  "eqt_avg_returns",
-                  "eqt_kurt_returns"]
+                  "eqt_avg_returns", 
+                  "log_vol_input", 
+                  "market_log_vol_input",
+                  "log_vol_diff_to_market_input",
+                  "eqt_avg_log_vol",
+                  ]
         return model, inputs
     
 
@@ -216,7 +213,7 @@ if __name__ == '__main__':
     from keras.utils import plot_model
     
     exp = Experiment(modelname="not_small_janet")
-    data = Data(small=False, verbose=True, ewma = False, aggregate = True)
+    data = Data(small=False, verbose=True, ewma = False, aggregate = False)
     exp.addconfig("data", data.config)
 
     model = NotSoSmallLSTM(data, use_lstm=True)

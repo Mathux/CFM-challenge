@@ -135,8 +135,22 @@ class GeneralModel:
                 return temp_market_log_vol
 
             elif name == "log_vol_diff_to_market_input":
-                return create_input('log_vol_input') - create_input(
-                    'market_log_vol_input')
+                return create_input('log_vol_input',data) - create_input(
+                    'market_log_vol_input',data)
+            elif name == 'eqt_avg_log_vol':
+                temp_eqt_log_vol = data.groupby('eqt_code')[
+                    self.return_cols].mean()
+                data.set_index(['eqt_code'], inplace=True)
+                self.eqt_log_vol_cols = [
+                    'eqt_log_vol_' + c for c in self.return_cols
+                ]
+                data[self.eqt_log_vol_cols] = temp_eqt_log_vol
+                data.reset_index(inplace=True)
+                temp_eqt_log_vol = data[self.eqt_log_vol_cols].values
+                temp_eqt_log_vol = temp_eqt_log_vol.reshape(
+                    (temp_eqt_log_vol.shape[0], temp_eqt_log_vol.shape[1], 1))
+                data = data.drop(self.eqt_log_vol_cols, axis=1)
+                return temp_eqt_log_vol
 
             elif name == "handmade_features_input":
                 return data[self.non_return_cols].values
@@ -161,7 +175,7 @@ class GeneralModel:
 
         if self.optimizer is None:
             conf["optimizer"] = {
-                "lr": 0.003,
+                "lr": 0.001,
                 "rho": 0.9,
                 "epsilon": None,
                 "decay": 0,
@@ -196,7 +210,7 @@ class GeneralModel:
 
         conf["ReduceLROnPlateau"] = {
             "monitor": "val_loss",
-            "factor": 0.9,
+            "factor": 0.85,
             "patience": plateau_patience,
             "min_lr": 10**-20
         }
