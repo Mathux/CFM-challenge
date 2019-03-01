@@ -11,7 +11,8 @@ import pandas as pd
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 from keras.optimizers import RMSprop
 from keras.utils import to_categorical
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
+from CLR import CyclicLR
 
 
 class GeneralModel:
@@ -26,16 +27,26 @@ class GeneralModel:
                 return temp_eqt.transform(data['eqt_code'].values)
 
             elif name == "nb_eqt_traded":
-                return data['countd_product'].values
+                scaler = MinMaxScaler()
+                temp_d = data['countd_product'].values
+                temp_d = temp_d.reshape((len(temp_d),1)).astype('float64')
+                return scaler.fit_transform(temp_d)
 
             elif name == "nb_nans_data":
-                return data['return_nan'].values
+                scaler = MinMaxScaler()
+                temp_d = data['return_nan'].values
+                temp_d = temp_d.reshape((len(temp_d),1)).astype('float64')
+                return scaler.fit_transform(temp_d)
 
             elif name == 'nb_days_eqt_traded':
-                return data['countd_date'].values
+                scaler = MinMaxScaler()
+                temp_d = data['countd_date'].values
+                temp_d = temp_d.reshape((len(temp_d),1)).astype('float64')
+                return scaler.fit_transform(temp_d)
 
             elif name == "returns_input":
                 temp_returns = data[self.return_cols].values
+                temp_returns = self.scale(temp_returns)
                 temp_returns = temp_returns.reshape((temp_returns.shape[0],
                                                      temp_returns.shape[1], 1))
                 return temp_returns
@@ -50,9 +61,11 @@ class GeneralModel:
                 data[self.market_return_cols] = temp_market_returns
                 data.reset_index(inplace=True)
                 temp_market_returns = data[self.market_return_cols].values
+                temp_market_returns = self.scale(temp_market_returns)
                 temp_market_returns = temp_market_returns.reshape(
                     (temp_market_returns.shape[0],
                      temp_market_returns.shape[1], 1))
+                
                 data = data.drop(self.market_return_cols, axis=1)
                 return temp_market_returns
 
@@ -66,6 +79,7 @@ class GeneralModel:
                 data[self.eqt_return_cols] = temp_eqt_returns
                 data.reset_index(inplace=True)
                 temp_eqt_returns = data[self.eqt_return_cols].values
+                temp_eqt_returns = self.scale(temp_eqt_returns)
                 temp_eqt_returns = temp_eqt_returns.reshape(
                     (temp_eqt_returns.shape[0], temp_eqt_returns.shape[1], 1))
                 data = data.drop(self.eqt_return_cols, axis=1)
@@ -104,11 +118,13 @@ class GeneralModel:
                 return np.nan_to_num(temp_eqt_kurt_returns)
 
             elif name == "return_diff_to_market_input":
-                return create_input('returns_input', data) - create_input(
-                    'market_returns_input', data)
+                temp = self.scale(create_input('returns_input', data).squeeze() - create_input(
+                    'market_returns_input', data).squeeze())
+                return temp.reshape((temp.shape[0],temp.shape[1],1))
 
             elif name == "log_vol_input":
                 temp_vol = np.log(np.abs(data[self.return_cols].values) + eps)
+                temp_vol = self.scale(temp_vol)
                 temp_vol = temp_vol.reshape((temp_vol.shape[0],
                                              temp_vol.shape[1], 1))
                 return temp_vol
@@ -128,6 +144,7 @@ class GeneralModel:
                 temp_df[self.market_log_vol_cols] = temp_market_log_vol
                 temp_df.reset_index(inplace=True)
                 temp_market_log_vol = temp_df[self.market_log_vol_cols].values
+                temp_market_log_vol = self.scale(temp_market_log_vol)
                 temp_market_log_vol = temp_market_log_vol.reshape(
                     (temp_market_log_vol.shape[0],
                      temp_market_log_vol.shape[1], 1))
@@ -135,8 +152,10 @@ class GeneralModel:
                 return temp_market_log_vol
 
             elif name == "log_vol_diff_to_market_input":
-                return create_input('log_vol_input',data) - create_input(
+                temp = create_input('log_vol_input',data) - create_input(
                     'market_log_vol_input',data)
+                temp = self.scale(temp)
+                return 
             elif name == 'eqt_avg_log_vol':
                 temp_eqt_log_vol = data.groupby('eqt_code')[
                     self.return_cols].mean()
@@ -153,8 +172,12 @@ class GeneralModel:
                 return temp_eqt_log_vol
 
             elif name == "handmade_features_input":
-                return data[self.non_return_cols].values
-
+                temp_non_return_cols = [col for col in self.non_return_cols if 
+                                        not col in ['return_nan',
+                                                    'countd_date',
+                                                    'countd_product']]
+                
+                return self.scale(data[temp_non_return_cols].values)
         input_data = [create_input(name, data) for name in self.inputnames]
 
         if labels is not None:
@@ -163,6 +186,9 @@ class GeneralModel:
             return input_data, labels
         else:
             return input_data
+    
+    def scale(self,X) :
+        return StandardScaler().fit_transform(X)
 
     def compile_fit(self,
                     checkpointname,
@@ -171,7 +197,8 @@ class GeneralModel:
                     stop_patience=15,
                     batch_size=8192,
                     verbose=0,
-                    kfold=None):
+                    kfold=None,
+                    best = False):
 
         conf = {}
 
@@ -214,8 +241,14 @@ class GeneralModel:
                 patience=conf["ReduceLROnPlateau"]["patience"],
                 min_lr=conf["ReduceLROnPlateau"]["min_lr"],
                 verbose=verbose)
+            
+            base_lr = conf["optimizer"]["lr"]
+            clr  = CyclicLR(mode='exp_range', 
+                            max_lr=base_lr*6, 
+                            base_lr=base_lr, 
+                            step_size=100)
 
-            return early_stop, checkpointer, reduce_lr
+            return early_stop, checkpointer, reduce_lr, clr
         
         conf["ModelCheckpoint"] = {
             "save_best_only": True,
@@ -224,14 +257,14 @@ class GeneralModel:
 
         conf["ReduceLROnPlateau"] = {
             "monitor": "val_loss",
-            "factor": 0.85,
+            "factor": 0.9,
             "patience": plateau_patience,
-            "min_lr": 10**-20
+            "min_lr": 10**-6
         }
 
         conf["metrics"] = ["acc"]
 
-        early_stop, checkpointer, reduce_lr = callbacks_intrain()
+        early_stop, checkpointer, reduce_lr, clr = callbacks_intrain()
                 
         self.model.compile(
             optimizer=opti,
@@ -255,7 +288,7 @@ class GeneralModel:
                 batch_size=conf["batch_size"],
                 verbose=verbose,
                 validation_data=(X_val, y_val),
-                callbacks=[checkpointer, early_stop, reduce_lr])
+                callbacks=[checkpointer, early_stop, clr])
         else:
             history = []
             for k in range(kfold):
@@ -280,7 +313,7 @@ class GeneralModel:
                     metrics={'output': conf["metrics"]},
                     loss_weights=[1])
 
-                early_stop, checkpointer, reduce_lr = callbacks_intrain()
+                early_stop, checkpointer, reduce_lr, clr = callbacks_intrain()
                 
                 hist = self.model.fit(
                     X_train,
@@ -293,7 +326,9 @@ class GeneralModel:
                 
                 history.append(hist)
                 # Load the best model
-                self.model.load_weights(checkpointname)
+                
+                if best :
+                    self.model.load_weights(checkpointname)
                 
         self.learning_config = conf
         return history
