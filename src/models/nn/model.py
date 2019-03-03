@@ -12,7 +12,7 @@ from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 from keras.optimizers import RMSprop
 from keras.utils import to_categorical
 from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
-from CLR import CyclicLR
+from src.models.nn.CLR import CyclicLR
 
 
 class GeneralModel:

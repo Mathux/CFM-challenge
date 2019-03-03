@@ -15,7 +15,6 @@ from keras.models import Model, Input
 from src.models.nn.model import GeneralLSTM
 from src.models.nn.janet import JANET
 
-from send_sms import *
 
 class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
