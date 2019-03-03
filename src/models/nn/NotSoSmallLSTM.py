@@ -102,34 +102,73 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         market_log_vol_input = Input(shape=(self.returns_length, 1), name='market_log_vol_input')
         
-        returns_features = concatenate([market_returns_input,
-                                        return_diff_to_market_input,
-                                        returns_input,
-                                        eqt_avg_returns_input,
-                                        market_log_vol_input,
-                                        log_vol_input,
-                                        ])
+#        returns_features = concatenate([market_returns_input,
+#                                        return_diff_to_market_input,
+#                                        returns_input,
+#                                        eqt_avg_returns_input,
+#                                        market_log_vol_input,
+#                                        log_vol_input,
+#                                        ])
+#        
+        return_diff_to_market_features = JANET(
+            self.lstm_out_dim,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(return_diff_to_market_input)
+
+        market_returns_features = JANET(
+            self.lstm_out_dim,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(market_returns_input)
+        
+        eqt_avg_returns_features = JANET(
+            self.lstm_out_dim,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(eqt_avg_returns_input)
+        
+        log_vol_features = JANET(
+            self.lstm_out_dim,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(log_vol_input)
+        
+        market_log_vol_features = JANET(
+            self.lstm_out_dim,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(market_log_vol_input)
                 
-        returns_features_lstm = JANET(
+        returns_features = JANET(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = False)(returns_input)
                 
-        eqt_market_returns_features_lstm = JANET(
-            self.lstm_out_dim,
-            return_sequences=False,
-            dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(returns_features)
+        vol_features = concatenate([log_vol_features,market_log_vol_features])
         
-        eqt_market_returns = concatenate([returns_features_lstm,eqt_market_returns_features_lstm])
-        eqt_market_returns = Dense(128,activation = 'linear')(eqt_market_returns)
-        eqt_market_returns = PReLU()(eqt_market_returns)
-        eqt_market_returns = BatchNormalization()(eqt_market_returns)
+        return_features = concatenate([returns_features,eqt_avg_returns_features,market_returns_features,return_diff_to_market_features])
+        
+        vol_features = Dense(self.lstm_out_dim, activation = 'linear')(vol_features)
+        vol_features = PReLU()(vol_features)
+        vol_features = Dropout(self.dropout_rate)(vol_features)
+        vol_features = BatchNormalization()(vol_features)
+        
+        return_features = Dense(self.lstm_out_dim,activation = 'linear')(return_features)
+        return_features = PReLU()(return_features)
+        return_features = Dropout(self.dropout_rate)(return_features)
+        return_features = BatchNormalization()(return_features)
+        
+    
+        market_features = concatenate([return_features,vol_features, returns_features])
+        market_features = Dense(128,activation = 'linear')(market_features)
+        market_features = PReLU()(market_features)
+        market_features = BatchNormalization()(market_features)
         
         handmade_features = Input(shape = (len(self.non_return_cols)-3,), name = 'handmade_features')
         
-        x = concatenate([returns_features_lstm, eqt_market_returns_features_lstm, context_eqt_day, 
+        x = concatenate([market_features, returns_features, context_eqt_day, 
                         handmade_features])
         
         x = Dense(128,activation = 'linear')(x)
@@ -186,8 +225,8 @@ if __name__ == '__main__':
     from src.tools.dataloader import Data
     from src.tools.utils import plot_training
 
-    KFOLDS = 5
-    EPOCHS = 150
+    KFOLDS = 10
+    EPOCHS = 50
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
@@ -197,8 +236,8 @@ if __name__ == '__main__':
 
     model = NotSoSmallLSTM(data, use_lstm=True)
     exp.addconfig("model", model.config)
-    # from keras.utils import plot_model
-    # plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
+    from keras.utils import plot_model
+    plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
 
     model.model.summary()
     # Fit the model
