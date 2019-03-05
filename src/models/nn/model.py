@@ -221,6 +221,7 @@ class GeneralModel:
             opti = self.optimizer
 
         conf["EarlyStopping"] = {"monitor": "val_loss", "patience": stop_patience}
+        
 
         def callbacks_intrain():
             early_stop = EarlyStopping(
@@ -312,7 +313,7 @@ class GeneralModel:
                     loss={'output': self.loss},
                     metrics={'output': conf["metrics"]},
                     loss_weights=[1])
-
+                
                 early_stop, checkpointer, reduce_lr, clr = callbacks_intrain()
                 
                 hist = self.model.fit(

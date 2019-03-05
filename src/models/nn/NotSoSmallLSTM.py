@@ -229,7 +229,7 @@ if __name__ == '__main__':
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=False, verbose=True, ewma=False, aggregate=False, kfold=KFOLDS)
+        small=True, verbose=True, ewma=False, aggregate=False, kfold=KFOLDS)
 
     exp.addconfig("data", data.config)
 
@@ -247,7 +247,8 @@ if __name__ == '__main__':
         stop_patience=10,
         verbose=1,
         kfold=KFOLDS,
-        batch_size=8500)
+        batch_size=8500,
+        best = False)
 
     exp.addconfig("learning", model.learning_config)
     exp.saveconfig(verbose=True)
@@ -262,5 +263,3 @@ if __name__ == '__main__':
         exp.modelname,
         bincsv=exp.allpath("predictions_bin.csv"),
         probacsv=exp.allpath("predictions_proba.csv"))
-    
-    send_sms(text = 'Training ended')
