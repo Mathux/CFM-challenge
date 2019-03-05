@@ -225,7 +225,7 @@ if __name__ == '__main__':
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=False, verbose=True, ewma=False, aggregate=False, kfolds = KFOLDS)
+        small=True, verbose=True, ewma=False, aggregate=False, kfold = KFOLDS)
 
     exp.addconfig("data", data.config)
 
@@ -244,7 +244,7 @@ if __name__ == '__main__':
         verbose=1,
         batch_size=8500,
         best = True,
-        kfolds = KFOLDS)
+        kfold = KFOLDS)
 
     exp.addconfig("learning", model.learning_config)
     exp.saveconfig(verbose=True)
