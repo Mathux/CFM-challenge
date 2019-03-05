@@ -19,8 +19,8 @@ from src.models.nn.janet import JANET
 class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
-                 eqt_embeddings_size=30,
-                 lstm_out_dim=50,
+                 eqt_embeddings_size=50,
+                 lstm_out_dim=35,
                  use_lstm=True,
                  dropout_rate=0.5,
                  dropout_spatial_rate=0.5,
@@ -127,40 +127,40 @@ class NotSoSmallLSTM(GeneralLSTM):
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = False)(eqt_avg_returns_input)
         
-        log_vol_features = JANET(
-            self.lstm_out_dim,
-            return_sequences=False,
-            dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(log_vol_input)
-        
-        market_log_vol_features = JANET(
-            self.lstm_out_dim,
-            return_sequences=False,
-            dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(market_log_vol_input)
-                
+#        log_vol_features = JANET(
+#            self.lstm_out_dim,
+#            return_sequences=False,
+#            dropout=self.dropout_lstm,
+#            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(log_vol_input)
+#        
+#        market_log_vol_features = JANET(
+#            self.lstm_out_dim,
+#            return_sequences=False,
+#            dropout=self.dropout_lstm,
+#            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(market_log_vol_input)
+#                
         returns_features = JANET(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = False)(returns_input)
                 
-        vol_features = concatenate([log_vol_features,market_log_vol_features])
+#        vol_features = concatenate([log_vol_features,market_log_vol_features])
         
         return_features = concatenate([returns_features,eqt_avg_returns_features,market_returns_features,return_diff_to_market_features])
         
-        vol_features = Dense(self.lstm_out_dim, activation = 'linear')(vol_features)
-        vol_features = PReLU()(vol_features)
-        vol_features = Dropout(self.dropout_rate)(vol_features)
-        vol_features = BatchNormalization()(vol_features)
-        
+#        vol_features = Dense(self.lstm_out_dim, activation = 'linear')(vol_features)
+#        vol_features = PReLU()(vol_features)
+#        vol_features = Dropout(self.dropout_rate)(vol_features)
+#        vol_features = BatchNormalization()(vol_features)
+#        
         return_features = Dense(self.lstm_out_dim,activation = 'linear')(return_features)
         return_features = PReLU()(return_features)
         return_features = Dropout(self.dropout_rate)(return_features)
         return_features = BatchNormalization()(return_features)
         
     
-        market_features = concatenate([return_features,vol_features, returns_features])
+        market_features = concatenate([return_features, returns_features])
         market_features = Dense(128,activation = 'linear')(market_features)
         market_features = PReLU()(market_features)
         market_features = BatchNormalization()(market_features)
@@ -177,14 +177,14 @@ class NotSoSmallLSTM(GeneralLSTM):
         x = Dropout(self.dropout_rate)(x)
         
         x = BatchNormalization()(x)
-        
-        x = Dense(128,activation = 'linear')(x)
-        
-        x = PReLU()(x)
-        
-        x = Dropout(self.dropout_rate)(x)
-        
-        x = BatchNormalization()(x)
+#        
+#        x = Dense(128,activation = 'linear')(x)
+#        
+#        x = PReLU()(x)
+#        
+#        x = Dropout(self.dropout_rate)(x)
+#        
+#        x = BatchNormalization()(x)
         
         output = Dense(2,activation = 'softmax',name = 'output')(x)
 
@@ -198,8 +198,6 @@ class NotSoSmallLSTM(GeneralLSTM):
                     market_returns_input, 
                     return_diff_to_market_input,
                     eqt_avg_returns_input,
-                    log_vol_input, 
-                    market_log_vol_input,
                     handmade_features],
             outputs=[output])
 
@@ -211,8 +209,6 @@ class NotSoSmallLSTM(GeneralLSTM):
                   "market_returns_input",
                   "return_diff_to_market_input",
                   "eqt_avg_returns", 
-                  "log_vol_input", 
-                  "market_log_vol_input",
                   "handmade_features_input"
                   ]
         return model, inputs
@@ -224,12 +220,12 @@ if __name__ == '__main__':
     from src.tools.dataloader import Data
     from src.tools.utils import plot_training
 
-    KFOLDS = None
+    KFOLDS = 2
     EPOCHS = 50
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=False, verbose=True, ewma=False, aggregate=False)
+        small=False, verbose=True, ewma=False, aggregate=False, kfolds = KFOLDS)
 
     exp.addconfig("data", data.config)
 
@@ -247,7 +243,8 @@ if __name__ == '__main__':
         stop_patience=10,
         verbose=1,
         batch_size=8500,
-        best = False)
+        best = True,
+        kfolds = KFOLDS)
 
     exp.addconfig("learning", model.learning_config)
     exp.saveconfig(verbose=True)
