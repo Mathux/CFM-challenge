@@ -224,12 +224,12 @@ if __name__ == '__main__':
     from src.tools.dataloader import Data
     from src.tools.utils import plot_training
 
-    KFOLDS = 10
+    KFOLDS = None
     EPOCHS = 50
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=True, verbose=True, ewma=False, aggregate=False, kfold=KFOLDS)
+        small=False, verbose=True, ewma=False, aggregate=False)
 
     exp.addconfig("data", data.config)
 
@@ -246,7 +246,6 @@ if __name__ == '__main__':
         plateau_patience=5,
         stop_patience=10,
         verbose=1,
-        kfold=KFOLDS,
         batch_size=8500,
         best = False)
 
