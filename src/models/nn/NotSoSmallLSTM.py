@@ -20,8 +20,8 @@ from src.models.nn.janet import JANET
 class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
-                 eqt_embeddings_size=80,
-                 lstm_out_dim=50,
+                 eqt_embeddings_size=50,
+                 lstm_out_dim=128,
                  use_lstm=True,
                  dropout_rate=0.5,
                  dropout_spatial_rate=0.3,
@@ -55,26 +55,26 @@ class NotSoSmallLSTM(GeneralLSTM):
         
 
         nb_eqt_traded = Input(shape=[1], name='nb_eqt_traded_input')
-        #nb_eqt_traded_emb = Embedding(
-        #    output_dim=self.eqt_embeddings_size//2,
-        #    input_dim=self.n_eqt,
-        #    input_length=1)(nb_eqt_traded_input)
-        #nb_eqt_traded = Dropout(self.dropout_spatial_rate)(nb_eqt_traded_emb)
-        #nb_eqt_traded = Flatten()(nb_eqt_traded)
+#        nb_eqt_traded_emb = Embedding(
+#            output_dim=self.eqt_embeddings_size//2,
+#            input_dim=self.n_eqt,
+#            input_length=1)(nb_eqt_traded)
+#        nb_eqt_traded = Dropout(self.dropout_spatial_rate)(nb_eqt_traded_emb)
+#        nb_eqt_traded = Flatten()(nb_eqt_traded)
         
         nb_nans_data = Input(shape=[1], name='nb_nan_input')
-        #nb_nans_data_emb = Embedding( output_dim=self.eqt_embeddings_size//2,
-        #    input_dim=71,
-        #    input_length=1)(nb_nan_input)
-        #nb_nans_data = Dropout(self.dropout_spatial_rate)(nb_nans_data_emb)
-        #nb_nans_data = Flatten()(nb_nans_data)
+#        nb_nans_data_emb = Embedding( output_dim=self.eqt_embeddings_size//2,
+#            input_dim=71,
+#            input_length=1)(nb_nans_data)
+#        nb_nans_data = Dropout(self.dropout_spatial_rate)(nb_nans_data_emb)
+#        nb_nans_data = Flatten()(nb_nans_data)
         
         nb_days_eqt_traded = Input(shape=[1], name='nb_days_eqt_traded_input')
-        #nb_days_eqt_traded = Embedding( output_dim=self.eqt_embeddings_size//2,
-        #    input_dim=1512,
-        #    input_length=1)(nb_days_eqt_traded_input)
-        #nb_days_eqt_traded = Dropout(self.dropout_spatial_rate)(nb_days_eqt_traded)
-        #nb_days_eqt_traded = Flatten()(nb_days_eqt_traded)
+#        nb_days_eqt_traded = Embedding( output_dim=self.eqt_embeddings_size//2,
+#            input_dim=1512,
+#            input_length=1)(nb_days_eqt_traded)
+#        nb_days_eqt_traded = Dropout(self.dropout_spatial_rate)(nb_days_eqt_traded)
+#        nb_days_eqt_traded = Flatten()(nb_days_eqt_traded)
         
         context_eqt_day = concatenate([eqt_emb,nb_eqt_traded,nb_nans_data,nb_days_eqt_traded])
         context_eqt_day = Dense(32, activation = 'linear')(context_eqt_day)
@@ -88,31 +88,27 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         market_returns_input = Input(
             shape=(self.returns_length, 1), name='market_returns_input')
-        
-        return_diff_to_market_input = Input(
-                shape=(self.returns_length, 1), 
-                name='return_diff_to_market_input')
-                
+                        
         eqt_avg_returns_input = Input(
                 shape=(self.returns_length, 1), name='eqt_avg_returns_input')
       
-        market_returns_features = JANET(
+        market_returns_features = Bidirectional(LSTM(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(market_returns_input)
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False))(market_returns_input)
         
-        eqt_avg_returns_features = JANET(
+        eqt_avg_returns_features = Bidirectional(LSTM(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(eqt_avg_returns_input)
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False))(eqt_avg_returns_input)
                         
-        returns_features = JANET(
+        returns_features =  Bidirectional(LSTM(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(returns_input)
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False))(returns_input)
         
         market_returns_features = keras.layers.Subtract()([returns_features,market_returns_features])
         
@@ -127,7 +123,7 @@ class NotSoSmallLSTM(GeneralLSTM):
         
     
         market_features = concatenate([return_features, market_features])
-        market_features = Dense(128,activation = 'linear')(market_features)
+        market_features = Dense(self.lstm_out_dim,activation = 'linear')(market_features)
         market_features = PReLU()(market_features)
         market_features = BatchNormalization()(market_features)
         
