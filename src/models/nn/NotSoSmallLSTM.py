@@ -8,7 +8,7 @@ Created on Sun Feb 24 16:17:21 2019
 
 from keras.layers import (Dense, Dropout, Embedding, PReLU, SpatialDropout1D,
                           concatenate, Flatten, MaxPooling1D, RepeatVector,
-                          LSTM, Bidirectional, BatchNormalization)
+                          LSTM, Bidirectional, BatchNormalization, Substract)
 from keras.models import Model, Input
 
 
@@ -19,14 +19,13 @@ from src.models.nn.janet import JANET
 class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
-                 eqt_embeddings_size=50,
-                 lstm_out_dim=35,
+                 eqt_embeddings_size=80,
+                 lstm_out_dim=50,
                  use_lstm=True,
                  dropout_rate=0.5,
-                 dropout_spatial_rate=0.5,
+                 dropout_spatial_rate=0.3,
                  dropout_lstm=0.5,
                  dropout_lstm_rec=0.5,
-                 kernel_size=3,
                  loss='binary_crossentropy',
                  optimizer=None):
         super(NotSoSmallLSTM, self).__init__(
@@ -38,7 +37,6 @@ class NotSoSmallLSTM(GeneralLSTM):
             dropout_spatial_rate=dropout_spatial_rate,
             dropout_lstm=dropout_lstm,
             dropout_lstm_rec=dropout_lstm_rec,
-            kernel_size=kernel_size,
             loss=loss,
             optimizer=optimizer)
 
@@ -144,6 +142,8 @@ class NotSoSmallLSTM(GeneralLSTM):
             return_sequences=False,
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = False)(returns_input)
+        
+        market_returns_features = Substract()([returns_features,market_returns_features])
                 
 #        vol_features = concatenate([log_vol_features,market_log_vol_features])
         
@@ -177,14 +177,14 @@ class NotSoSmallLSTM(GeneralLSTM):
         x = Dropout(self.dropout_rate)(x)
         
         x = BatchNormalization()(x)
-#        
-#        x = Dense(128,activation = 'linear')(x)
-#        
-#        x = PReLU()(x)
-#        
-#        x = Dropout(self.dropout_rate)(x)
-#        
-#        x = BatchNormalization()(x)
+        
+        x = Dense(128,activation = 'linear')(x)
+        
+        x = PReLU()(x)
+        
+        x = Dropout(self.dropout_rate)(x)
+        
+        x = BatchNormalization()(x)
         
         output = Dense(2,activation = 'softmax',name = 'output')(x)
 
@@ -242,7 +242,7 @@ if __name__ == '__main__':
         plateau_patience=5,
         stop_patience=10,
         verbose=1,
-        batch_size=8500,
+        batch_size=8092,
         best = True,
         )
 

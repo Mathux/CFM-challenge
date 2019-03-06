@@ -147,7 +147,7 @@ def create_dir(directory):
 
 def plot_training(history, show=True, losspath=None, accpath=None):
     plt.figure()
-    plt.plot(history.history['loss'])
+    plt.plot(history.history['loss'][1:])
     plt.plot(history.history['val_loss'])
     plt.title('model loss')
     plt.ylabel('loss')
