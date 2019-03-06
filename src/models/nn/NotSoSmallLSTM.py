@@ -8,8 +8,9 @@ Created on Sun Feb 24 16:17:21 2019
 
 from keras.layers import (Dense, Dropout, Embedding, PReLU, SpatialDropout1D,
                           concatenate, Flatten, MaxPooling1D, RepeatVector,
-                          LSTM, Bidirectional, BatchNormalization, Substract)
+                          LSTM, Bidirectional, BatchNormalization)
 from keras.models import Model, Input
+import keras
 
 
 from src.models.nn.model import GeneralLSTM
@@ -143,7 +144,7 @@ class NotSoSmallLSTM(GeneralLSTM):
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = False)(returns_input)
         
-        market_returns_features = Substract()([returns_features,market_returns_features])
+        market_returns_features = keras.layers.Subtract()([returns_features,market_returns_features])
                 
 #        vol_features = concatenate([log_vol_features,market_log_vol_features])
         
