@@ -20,8 +20,8 @@ from src.models.nn.janet import JANET
 class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
-                 eqt_embeddings_size=50,
-                 lstm_out_dim=128,
+                 eqt_embeddings_size=30,
+                 lstm_out_dim=64,
                  use_lstm=True,
                  dropout_rate=0.5,
                  dropout_spatial_rate=0.3,
