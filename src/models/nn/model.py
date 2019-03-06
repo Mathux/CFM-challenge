@@ -8,6 +8,7 @@ Created on Sat Feb 16 16:33:23 2019
 
 import numpy as np
 import pandas as pd
+import keras
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 from keras.optimizers import RMSprop
 from keras.utils import to_categorical
@@ -289,7 +290,7 @@ class GeneralModel:
                 batch_size=conf["batch_size"],
                 verbose=verbose,
                 validation_data=(X_val, y_val),
-                callbacks=[checkpointer, early_stop, clr])
+                callbacks=[checkpointer, early_stop, reduce_lr])
         else:
             history = []
             for k in range(kfold):
@@ -332,6 +333,10 @@ class GeneralModel:
                     self.model.load_weights(checkpointname)
                 
         self.learning_config = conf
+        
+        if isinstance(history,keras.callbacks.History) :
+            history = [history]
+        
         return history
 
     def create_submission(self, modelname, bincsv, probacsv):
