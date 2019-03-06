@@ -225,14 +225,14 @@ if __name__ == '__main__':
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=True, verbose=True, ewma=False, aggregate=False)
+        small=False, verbose=True, ewma=False, aggregate=False)
 
     exp.addconfig("data", data.config)
 
     model = NotSoSmallLSTM(data, use_lstm=True)
     exp.addconfig("model", model.config)
-    from keras.utils import plot_model
-    plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
+#    from keras.utils import plot_model
+#    plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
 
     model.model.summary()
     # Fit the model
