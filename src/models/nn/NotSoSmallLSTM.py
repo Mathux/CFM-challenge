@@ -221,7 +221,7 @@ if __name__ == '__main__':
     from src.tools.utils import plot_training
 
     KFOLDS = 0
-    EPOCHS = 1
+    EPOCHS = 150
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
