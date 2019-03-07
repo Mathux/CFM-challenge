@@ -28,22 +28,28 @@ class GeneralModel:
                 return temp_eqt.transform(data['eqt_code'].values)
 
             elif name == "nb_eqt_traded":
-                scaler = MinMaxScaler()
+#                scaler = MinMaxScaler()
+                scaler = LabelEncoder()
                 temp_d = data['countd_product'].values
-                temp_d = temp_d.reshape((len(temp_d),1)).astype('float64')
-                return scaler.fit_transform(temp_d)
+                scaler.fit(temp_d)
+                temp_d = scaler.transform(data['countd_product'].values)
+                return temp_d
 
             elif name == "nb_nans_data":
-                scaler = MinMaxScaler()
-                temp_d = data['return_nan'].values
-                temp_d = temp_d.reshape((len(temp_d),1)).astype('float64')
-                return scaler.fit_transform(temp_d)
+#                scaler = MinMaxScaler()
+                scaler = LabelEncoder()
+                temp_d = data['return_nan'].values.astype('int64')
+                temp_d = scaler.fit_transform(temp_d)
+                temp_d = temp_d.reshape((len(temp_d),1))
+                return temp_d
 
             elif name == 'nb_days_eqt_traded':
                 scaler = MinMaxScaler()
-                temp_d = data['countd_date'].values
-                temp_d = temp_d.reshape((len(temp_d),1)).astype('float64')
-                return scaler.fit_transform(temp_d)
+                scaler = LabelEncoder()
+                temp_d = data['countd_date'].values.astype('int64')
+                temp_d = scaler.fit_transform(temp_d)
+                temp_d = temp_d.reshape((len(temp_d),1))
+                return temp_d
 
             elif name == "returns_input":
                 temp_returns = data[self.return_cols].values

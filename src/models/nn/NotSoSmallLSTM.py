@@ -44,6 +44,7 @@ class NotSoSmallLSTM(GeneralLSTM):
         self.model, self.inputnames = self.create_model()
 
     def create_model(self):
+        
         eqt_code_input = Input(shape=[1], name='eqt_code_input')
         eqt_emb = Embedding(
             output_dim=self.eqt_embeddings_size,
@@ -54,30 +55,30 @@ class NotSoSmallLSTM(GeneralLSTM):
         eqt_emb = Flatten()(eqt_emb)
         
 
-        nb_eqt_traded = Input(shape=[1], name='nb_eqt_traded_input')
-#        nb_eqt_traded_emb = Embedding(
-#            output_dim=self.eqt_embeddings_size//2,
-#            input_dim=self.n_eqt,
-#            input_length=1,
-#            name='eqt_embeddings')(nb_eqt_traded_input)
-#        nb_eqt_traded = Dropout(self.dropout_spatial_rate)(nb_eqt_traded_emb)
-#        nb_eqt_traded = Flatten()(nb_eqt_traded)
+        nb_eqt_traded_input = Input(shape=[1], name='nb_eqt_traded_input')
+        nb_eqt_traded_emb = Embedding(
+            output_dim=self.eqt_embeddings_size//2,
+            input_dim=self.n_eqt,
+            input_length=1,
+            name='nb_eqt_traded_emb')(nb_eqt_traded_input)
+        nb_eqt_traded = Dropout(self.dropout_spatial_rate)(nb_eqt_traded_emb)
+        nb_eqt_traded = Flatten()(nb_eqt_traded)
         
-        nb_nans_data = Input(shape=[1], name='nb_nan_input')
-#        nb_nans_data_emb = Embedding( output_dim=self.eqt_embeddings_size//2,
-#            input_dim=72,
-#            input_length=1)(nb_nans_data_input)
-#        nb_nans_data = Dropout(self.dropout_spatial_rate)(nb_nans_data_emb)
-#        nb_nans_data = Flatten()(nb_nans_data)
-        
-        nb_days_eqt_traded = Input(shape=[1], name='nb_days_eqt_traded_input')
-#        nb_days_eqt_traded = Embedding( output_dim=self.eqt_embeddings_size//2,
-#            input_dim=1512,
-#            input_length=1)(nb_days_eqt_traded)
-#        nb_days_eqt_traded = Dropout(self.dropout_spatial_rate)(nb_days_eqt_traded)
-#        nb_days_eqt_traded = Flatten()(nb_days_eqt_traded)
-        
-        context_eqt_day = concatenate([eqt_emb,nb_eqt_traded,nb_nans_data,nb_days_eqt_traded])
+        nb_nan_input = Input(shape=[1], name='nb_nan_input')
+        nb_nans_data_emb = Embedding( output_dim=self.eqt_embeddings_size//2,
+            input_dim=72,
+            input_length=1)(nb_nan_input)
+        nb_nans_data = Dropout(self.dropout_spatial_rate)(nb_nans_data_emb)
+        nb_nans_data = Flatten()(nb_nans_data)
+#        
+        nb_days_eqt_traded_input = Input(shape=[1], name='nb_days_eqt_traded_input')
+        nb_days_eqt_traded = Embedding( output_dim=self.eqt_embeddings_size//2,
+            input_dim=1512,
+            input_length=1)(nb_days_eqt_traded_input)
+        nb_days_eqt_traded = Dropout(self.dropout_spatial_rate)(nb_days_eqt_traded)
+        nb_days_eqt_traded = Flatten()(nb_days_eqt_traded)
+#        
+        context_eqt_day = concatenate([eqt_emb,nb_eqt_traded,nb_nan_input,nb_days_eqt_traded_input])
         context_eqt_day = Dense(32, activation = 'linear')(context_eqt_day)
         context_eqt_day = PReLU()(context_eqt_day)
         context_eqt_day = Dropout(self.dropout_rate)(context_eqt_day)
@@ -165,9 +166,9 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         model = Model(
             inputs=[eqt_code_input, 
-                    nb_eqt_traded, 
-                    nb_nans_data,
-                    nb_days_eqt_traded,
+                    nb_eqt_traded_input, 
+                    nb_nan_input,
+                    nb_days_eqt_traded_input,
                     returns_input, 
                     market_returns_input, 
                     eqt_avg_returns_input,
@@ -197,7 +198,7 @@ if __name__ == '__main__':
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=True, verbose=True, ewma=False, aggregate=False)
+        small=False, verbose=True, ewma=False, aggregate=False)
 
     exp.addconfig("data", data.config)
 
