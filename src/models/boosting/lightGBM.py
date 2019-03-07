@@ -13,7 +13,7 @@ from sklearn import model_selection
 
 from src.tools.dataloader import Data
 
-data = Data(small=True, verbose=True)
+data = Data(small=False, verbose=True)
 
 train_labels = data.train.labels['end_of_day_return']
 val_labels = data.val.labels['end_of_day_return']
