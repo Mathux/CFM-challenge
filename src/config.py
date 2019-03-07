@@ -1,5 +1,5 @@
 # Seed for reproducing results
-SEED = 42
+SEED = 500
 
 path_to_test = "data/input_test.csv"
 path_to_train = "data/input_training.csv"

@@ -75,5 +75,21 @@ print('Best score reached: {} with params: {} '.format(gs.best_score_,
 
 preds = gs.predict(data.test.data)
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+import pandas as pd
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+# sorted(zip(clf.feature_importances_, X.columns), reverse=True)
+feature_imp = pd.DataFrame(sorted(zip(gs.feature_importances_,data.train.data.columns)), columns=['Value','Feature'])
+
+plt.figure(figsize=(20, 10))
+sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value", ascending=False))
+plt.title('LightGBM Features (avg over folds)')
+plt.tight_layout()
+plt.show()
+plt.savefig('lgbm_importances-01.png')
+
 from utils import submission
 submission(preds, data.test.data["ID"])
