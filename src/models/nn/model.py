@@ -290,7 +290,7 @@ class GeneralModel:
                 batch_size=conf["batch_size"],
                 verbose=verbose,
                 validation_data=(X_val, y_val),
-                callbacks=[checkpointer, early_stop, reduce_lr])
+                callbacks=[checkpointer, early_stop, reduce_lr, clr])
         else:
             history = []
             for k in range(kfold):

@@ -97,19 +97,22 @@ class NotSoSmallLSTM(GeneralLSTM):
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(market_returns_input)
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+            kernel_initializer='random_uniform')(market_returns_input)
         
         eqt_avg_returns_features = JANET(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(eqt_avg_returns_input)
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+            kernel_initializer='random_uniform')(eqt_avg_returns_input)
                         
         returns_features =  JANET(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(returns_input)
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+            kernel_initializer='random_uniform')(returns_input)
         
         diff_market_returns_features = keras.layers.Subtract()([
                 returns_features,
@@ -209,9 +212,9 @@ if __name__ == '__main__':
         checkpointname=exp.modelname,
         epochs=EPOCHS,
         plateau_patience=5,
-        stop_patience=10,
+        stop_patience=30,
         verbose=1,
-        batch_size=64,
+        batch_size=8192,
         best = True,
         )
 
