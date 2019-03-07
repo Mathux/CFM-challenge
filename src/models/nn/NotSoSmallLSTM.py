@@ -20,8 +20,8 @@ from src.models.nn.janet import JANET
 class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
-                 eqt_embeddings_size=30,
-                 lstm_out_dim=64,
+                 eqt_embeddings_size=80,
+                 lstm_out_dim=128,
                  use_lstm=True,
                  dropout_rate=0.5,
                  dropout_spatial_rate=0.3,
@@ -50,7 +50,7 @@ class NotSoSmallLSTM(GeneralLSTM):
             input_dim=self.n_eqt,
             input_length=1,
             name='eqt_embeddings')(eqt_code_input)
-        eqt_emb = Dropout(self.dropout_spatial_rate)(eqt_emb)
+        eqt_emb = SpatialDropout1D(self.dropout_spatial_rate)(eqt_emb)
         eqt_emb = Flatten()(eqt_emb)
         
 
@@ -58,14 +58,15 @@ class NotSoSmallLSTM(GeneralLSTM):
 #        nb_eqt_traded_emb = Embedding(
 #            output_dim=self.eqt_embeddings_size//2,
 #            input_dim=self.n_eqt,
-#            input_length=1)(nb_eqt_traded)
+#            input_length=1,
+#            name='eqt_embeddings')(nb_eqt_traded_input)
 #        nb_eqt_traded = Dropout(self.dropout_spatial_rate)(nb_eqt_traded_emb)
 #        nb_eqt_traded = Flatten()(nb_eqt_traded)
         
         nb_nans_data = Input(shape=[1], name='nb_nan_input')
 #        nb_nans_data_emb = Embedding( output_dim=self.eqt_embeddings_size//2,
-#            input_dim=71,
-#            input_length=1)(nb_nans_data)
+#            input_dim=72,
+#            input_length=1)(nb_nans_data_input)
 #        nb_nans_data = Dropout(self.dropout_spatial_rate)(nb_nans_data_emb)
 #        nb_nans_data = Flatten()(nb_nans_data)
         
@@ -92,29 +93,37 @@ class NotSoSmallLSTM(GeneralLSTM):
         eqt_avg_returns_input = Input(
                 shape=(self.returns_length, 1), name='eqt_avg_returns_input')
       
-        market_returns_features = Bidirectional(LSTM(
+        market_returns_features = JANET(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False))(market_returns_input)
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(market_returns_input)
         
-        eqt_avg_returns_features = Bidirectional(LSTM(
+        eqt_avg_returns_features = JANET(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False))(eqt_avg_returns_input)
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(eqt_avg_returns_input)
                         
-        returns_features =  Bidirectional(LSTM(
+        returns_features =  JANET(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False))(returns_input)
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False)(returns_input)
         
-        market_returns_features = keras.layers.Subtract()([returns_features,market_returns_features])
+        diff_market_returns_features = keras.layers.Subtract()([
+                returns_features,
+                market_returns_features])
         
-        eqt_avg_returns_features  = keras.layers.Subtract()([returns_features,eqt_avg_returns_features])
+        diff_eqt_avg_returns_features  = keras.layers.Subtract()([
+                returns_features,
+                eqt_avg_returns_features])
         
-        market_features = concatenate([returns_features,eqt_avg_returns_features,market_returns_features])
+        market_features = concatenate([returns_features,
+                                       eqt_avg_returns_features,
+                                       market_returns_features,
+                                       diff_eqt_avg_returns_features,
+                                       diff_market_returns_features])
 
         return_features = Dense(self.lstm_out_dim,activation = 'linear')(returns_features)
         return_features = PReLU()(return_features)
@@ -140,13 +149,13 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         x = BatchNormalization()(x)
         
-        x = Dense(128,activation = 'linear')(x)
-        
-        x = PReLU()(x)
-        
-        x = Dropout(self.dropout_rate)(x)
-        
-        x = BatchNormalization()(x)
+#        x = Dense(128,activation = 'linear')(x)
+#        
+#        x = PReLU()(x)
+#        
+#        x = Dropout(self.dropout_rate)(x)
+#        
+#        x = BatchNormalization()(x)
         
         output = Dense(2,activation = 'softmax',name = 'output')(x)
 
@@ -185,14 +194,14 @@ if __name__ == '__main__':
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=False, verbose=True, ewma=False, aggregate=False)
+        small=True, verbose=True, ewma=False, aggregate=False)
 
     exp.addconfig("data", data.config)
 
     model = NotSoSmallLSTM(data, use_lstm=True)
     exp.addconfig("model", model.config)
-#    from keras.utils import plot_model
-#    plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
+    from keras.utils import plot_model
+    plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
 
     model.model.summary()
     # Fit the model
@@ -202,7 +211,7 @@ if __name__ == '__main__':
         plateau_patience=5,
         stop_patience=10,
         verbose=1,
-        batch_size=8092,
+        batch_size=64,
         best = True,
         )
 

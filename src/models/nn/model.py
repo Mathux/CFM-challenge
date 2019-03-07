@@ -269,7 +269,7 @@ class GeneralModel:
         early_stop, checkpointer, reduce_lr, clr = callbacks_intrain()
                 
         self.model.compile(
-            optimizer=opti,
+            optimizer='adam',
             loss={'output': self.loss},
             metrics={'output': conf["metrics"]},
             loss_weights=[1])
