@@ -17,6 +17,7 @@ data = Data(small=False, verbose=True)
 
 data.train.data = data.train.data.drop(['ID','date'],axis = 1)
 data.val.data = data.val.data.drop(['ID','date'],axis = 1)
+data.test.data = data.test.data.drop(['ID','date'],axis = 1)
 train_labels = data.train.labels['end_of_day_return']
 val_labels = data.val.labels['end_of_day_return']
 
