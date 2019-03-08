@@ -47,7 +47,7 @@ param_test = {
     'reg_lambda': [0, 1e-1, 1, 5, 10, 20, 50, 100]
 }
 
-n_HP_points_to_test = 1
+n_HP_points_to_test = 100
 
 clf = lgbm.LGBMClassifier(
     max_depth=-1,
