@@ -47,7 +47,7 @@ param_test = {
     'reg_lambda': [0, 1e-1, 1, 5, 10, 20, 50, 100]
 }
 
-n_HP_points_to_test = 100
+n_HP_points_to_test = 1
 
 clf = lgbm.LGBMClassifier(
     max_depth=-1,
@@ -72,8 +72,9 @@ gs = model_selection.RandomizedSearchCV(
 gs.fit(data.train.data, train_labels, **fit_params)
 print('Best score reached: {} with params: {} '.format(gs.best_score_,
                                                        gs.best_params_))
-
 preds = gs.predict(data.test.data)
+
+
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -82,7 +83,7 @@ import pandas as pd
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # sorted(zip(clf.feature_importances_, X.columns), reverse=True)
-feature_imp = pd.DataFrame(sorted(zip(gs.feature_importances_,data.train.data.columns)), columns=['Value','Feature'])
+feature_imp = pd.DataFrame(sorted(zip(gs.best_estimator_.feature_importances_,data.train.data.columns)), columns=['Value','Feature'])
 
 plt.figure(figsize=(20, 10))
 sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value", ascending=False))
@@ -91,5 +92,5 @@ plt.tight_layout()
 plt.show()
 plt.savefig('lgbm_importances-01.png')
 
-from utils import submission
-submission(preds, data.test.data["ID"])
+#from utils import submission
+#submission(preds, data.test.data["ID"])
