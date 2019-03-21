@@ -17,6 +17,7 @@ data = Data(small=False, verbose=True)
 
 data.train.data = data.train.data.drop(['ID','date'],axis = 1)
 data.val.data = data.val.data.drop(['ID','date'],axis = 1)
+test_id = data.test.data['ID']
 data.test.data = data.test.data.drop(['ID','date'],axis = 1)
 train_labels = data.train.labels['end_of_day_return']
 val_labels = data.val.labels['end_of_day_return']
@@ -86,14 +87,14 @@ import pandas as pd
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # sorted(zip(clf.feature_importances_, X.columns), reverse=True)
-feature_imp = pd.DataFrame(sorted(zip(gs.best_estimator_.feature_importances_,data.train.data.columns)), columns=['Value','Feature'])
+#feature_imp = pd.DataFrame(sorted(zip(gs.best_estimator_.feature_importances_,data.train.data.columns)), columns=['Value','Feature'])
 
-plt.figure(figsize=(20, 10))
-sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value", ascending=False))
-plt.title('LightGBM Features (avg over folds)')
-plt.tight_layout()
-plt.show()
-plt.savefig('lgbm_importances-01.png')
+#plt.figure(figsize=(20, 10))
+#sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value", ascending=False))
+#plt.title('LightGBM Features (avg over folds)')
+#plt.tight_layout()
+#plt.show()
+#plt.savefig('lgbm_importances-01.png')
 
-#from utils import submission
-#submission(preds, data.test.data["ID"])
+from src.tools.utils import submission
+submission(preds, test_id)
