@@ -71,14 +71,16 @@ gs = model_selection.RandomizedSearchCV(
     cv=3,
     refit=True,
     random_state=42,
-    verbose=True)
+    verbose=True,
+    )
 
 gs.fit(data.train.data, train_labels, **fit_params)
 print('Best score reached: {} with params: {} '.format(gs.best_score_,
                                                        gs.best_params_))
-preds = gs.predict(data.test.data)
+#preds = gs.predict(data.test.data)
 
-
+clf = lgbm.LGBMClassifier(importance_type = 'gain',**gs.best_params_)
+clf.fit(data.train.data, train_labels, **fit_params)
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -86,15 +88,15 @@ import warnings
 import pandas as pd
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-# sorted(zip(clf.feature_importances_, X.columns), reverse=True)
-#feature_imp = pd.DataFrame(sorted(zip(gs.best_estimator_.feature_importances_,data.train.data.columns)), columns=['Value','Feature'])
 
-#plt.figure(figsize=(20, 10))
-#sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value", ascending=False))
-#plt.title('LightGBM Features (avg over folds)')
-#plt.tight_layout()
+feature_imp = pd.DataFrame(sorted(zip(clf.feature_importances_,data.train.data.columns)), columns=['Value','Feature'])
+
+plt.figure(figsize=(20, 10))
+sns.barplot(x="Value", y="Feature", data=feature_imp.sort_values(by="Value", ascending=False))
+plt.title('LightGBM Features (avg over folds)')
+plt.tight_layout()
 #plt.show()
-#plt.savefig('lgbm_importances-01.png')
+plt.savefig('lgbm_importances-01.png')
 
 from src.tools.utils import submission
 submission(preds, test_id)
