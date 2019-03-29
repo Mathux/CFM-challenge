@@ -45,6 +45,7 @@ class NotSoSmallLSTM(GeneralLSTM):
 
     def create_model(self):
         
+        ### Context equity day
         eqt_code_input = Input(shape=[1], name='eqt_code_input')
         eqt_emb = Embedding(
             output_dim=self.eqt_embeddings_size,
@@ -54,7 +55,15 @@ class NotSoSmallLSTM(GeneralLSTM):
         eqt_emb = SpatialDropout1D(self.dropout_spatial_rate)(eqt_emb)
         eqt_emb = Flatten()(eqt_emb)
         
-
+        date_input = Input(shape=[1], name='date_input')
+        date_emb= Embedding(
+            output_dim=self.eqt_embeddings_size,
+            input_dim=1512,
+            input_length=1,
+            name='date_embeddings')(eqt_code_input)
+        date_emb = SpatialDropout1D(self.dropout_spatial_rate)(date_emb)
+        date_emb = Flatten()(date_emb)
+ 
         nb_eqt_traded_input = Input(shape=[1], name='nb_eqt_traded_input')
         nb_eqt_traded_emb = Embedding(
             output_dim=self.eqt_embeddings_size//2,
@@ -70,21 +79,21 @@ class NotSoSmallLSTM(GeneralLSTM):
             input_length=1)(nb_nan_input)
         nb_nans_data = Dropout(self.dropout_spatial_rate)(nb_nans_data_emb)
         nb_nans_data = Flatten()(nb_nans_data)
-#        
+        
         nb_days_eqt_traded_input = Input(shape=[1], name='nb_days_eqt_traded_input')
         nb_days_eqt_traded = Embedding( output_dim=self.eqt_embeddings_size//2,
             input_dim=1512,
             input_length=1)(nb_days_eqt_traded_input)
         nb_days_eqt_traded = Dropout(self.dropout_spatial_rate)(nb_days_eqt_traded)
         nb_days_eqt_traded = Flatten()(nb_days_eqt_traded)
-#        
-        context_eqt_day = concatenate([eqt_emb,nb_eqt_traded,nb_nan_input,nb_days_eqt_traded_input])
+        
+        context_eqt_day = concatenate([eqt_emb,nb_eqt_traded,nb_nans_data,nb_days_eqt_traded])
         context_eqt_day = Dense(32, activation = 'linear')(context_eqt_day)
         context_eqt_day = PReLU()(context_eqt_day)
         context_eqt_day = Dropout(self.dropout_rate)(context_eqt_day)
         context_eqt_day = BatchNormalization()(context_eqt_day)
         
-        
+        ### Temporal informations
         returns_input = Input(
             shape=(self.returns_length, 1), name='returns_input')
         
@@ -93,6 +102,13 @@ class NotSoSmallLSTM(GeneralLSTM):
                         
         eqt_avg_returns_input = Input(
                 shape=(self.returns_length, 1), name='eqt_avg_returns_input')
+        
+        difference_to_market = keras.layers.Subtract()([
+                returns_input, market_returns_input])
+        
+        diference_to_eqt = keras.layers.Subtract()([
+                returns_input, eqt_avg_returns_input])
+    
       
         market_returns_features = JANET(
             self.lstm_out_dim,
@@ -115,33 +131,45 @@ class NotSoSmallLSTM(GeneralLSTM):
             recurrent_dropout=self.dropout_lstm_rec, unroll = False,
             kernel_initializer='random_uniform')(returns_input)
         
-        diff_market_returns_features = keras.layers.Subtract()([
-                returns_features,
-                market_returns_features])
+        diff_to_market_features =  JANET(
+            self.lstm_out_dim,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+            kernel_initializer='random_uniform')(difference_to_market)
         
-        diff_eqt_avg_returns_features  = keras.layers.Subtract()([
-                returns_features,
-                eqt_avg_returns_features])
+        diff_to_eqt_features =  JANET(
+            self.lstm_out_dim,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+            kernel_initializer='random_uniform')(diference_to_eqt)
+        
         
         market_features = concatenate([returns_features,
                                        eqt_avg_returns_features,
                                        market_returns_features,
-                                       diff_eqt_avg_returns_features,
-                                       diff_market_returns_features])
+                                       diff_to_market_features,
+                                       diff_to_eqt_features])
 
         return_features = Dense(self.lstm_out_dim,activation = 'linear')(returns_features)
         return_features = PReLU()(return_features)
         return_features = Dropout(self.dropout_rate)(return_features)
         return_features = BatchNormalization()(return_features)
         
-    
-        market_features = concatenate([return_features, market_features])
         market_features = Dense(self.lstm_out_dim,activation = 'linear')(market_features)
         market_features = PReLU()(market_features)
         market_features = BatchNormalization()(market_features)
         
-        handmade_features = Input(shape = (len(self.non_return_cols)-3,), name = 'handmade_features')
+        ###Handmade Features input
+        handmade_features_input = Input(shape = (len(self.non_return_cols)-3,), 
+                                  name = 'handmade_features')
+        handmade_features = Dense(32, activation = 'linear')(handmade_features_input)
+        handmade_features = PReLU()(handmade_features)
+        handmade_features = Dropout(self.dropout_rate)(handmade_features)
+        handmade_features = BatchNormalization()(handmade_features)
         
+        ### Final Concatenation
         x = concatenate([market_features, return_features, context_eqt_day, 
                         handmade_features])
         
@@ -166,16 +194,18 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         model = Model(
             inputs=[eqt_code_input, 
+                    date_input,
                     nb_eqt_traded_input, 
                     nb_nan_input,
                     nb_days_eqt_traded_input,
                     returns_input, 
                     market_returns_input, 
                     eqt_avg_returns_input,
-                    handmade_features],
+                    handmade_features_input],
             outputs=[output])
 
         inputs = ["eqt_code_input", 
+                  "date",
                   "nb_eqt_traded", 
                   "nb_nans_data",
                   'nb_days_eqt_traded',

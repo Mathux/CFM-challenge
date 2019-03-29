@@ -26,6 +26,12 @@ class GeneralModel:
                 temp_eqt = LabelEncoder()
                 temp_eqt.fit(data['eqt_code'].values)
                 return temp_eqt.transform(data['eqt_code'].values)
+            
+            elif name == 'date' :
+                temp_name = LabelEncoder()
+                temp_name.fit(data['date'].values)
+                return temp_name.transform(data['date'].values)
+            
 
             elif name == "nb_eqt_traded":
 #                scaler = MinMaxScaler()
