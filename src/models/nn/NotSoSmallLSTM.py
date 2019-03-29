@@ -8,7 +8,7 @@ Created on Sun Feb 24 16:17:21 2019
 
 from keras.layers import (Dense, Dropout, Embedding, PReLU, SpatialDropout1D,
                           concatenate, Flatten, MaxPooling1D, RepeatVector,
-                          LSTM, Bidirectional, BatchNormalization)
+                          LSTM, Bidirectional, BatchNormalization, )
 from keras.models import Model, Input
 import keras
 
@@ -52,7 +52,7 @@ class NotSoSmallLSTM(GeneralLSTM):
             input_dim=self.n_eqt,
             input_length=1,
             name='eqt_embeddings')(eqt_code_input)
-        eqt_emb = SpatialDropout1D(self.dropout_spatial_rate)(eqt_emb)
+        eqt_emb = Dropout(self.dropout_spatial_rate)(eqt_emb)
         eqt_emb = Flatten()(eqt_emb)
         
         date_input = Input(shape=[1], name='date_input')
@@ -60,8 +60,8 @@ class NotSoSmallLSTM(GeneralLSTM):
             output_dim=self.eqt_embeddings_size,
             input_dim=1512,
             input_length=1,
-            name='date_embeddings')(eqt_code_input)
-        date_emb = SpatialDropout1D(self.dropout_spatial_rate)(date_emb)
+            name='date_embeddings')(date_input)
+        date_emb = Dropout(self.dropout_spatial_rate)(date_emb)
         date_emb = Flatten()(date_emb)
  
         nb_eqt_traded_input = Input(shape=[1], name='nb_eqt_traded_input')
@@ -87,7 +87,7 @@ class NotSoSmallLSTM(GeneralLSTM):
         nb_days_eqt_traded = Dropout(self.dropout_spatial_rate)(nb_days_eqt_traded)
         nb_days_eqt_traded = Flatten()(nb_days_eqt_traded)
         
-        context_eqt_day = concatenate([eqt_emb,nb_eqt_traded,nb_nans_data,nb_days_eqt_traded])
+        context_eqt_day = concatenate([eqt_emb,date_emb,nb_eqt_traded,nb_nans_data,nb_days_eqt_traded])
         context_eqt_day = Dense(32, activation = 'linear')(context_eqt_day)
         context_eqt_day = PReLU()(context_eqt_day)
         context_eqt_day = Dropout(self.dropout_rate)(context_eqt_day)
@@ -228,7 +228,7 @@ if __name__ == '__main__':
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=True, verbose=True, ewma=False, aggregate=False)
+        small=False, verbose=True, ewma=False, aggregate=False)
 
     exp.addconfig("data", data.config)
 
