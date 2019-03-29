@@ -8,7 +8,7 @@ Created on Sun Feb 24 16:17:21 2019
 
 from keras.layers import (Dense, Dropout, Embedding, PReLU, SpatialDropout1D,
                           concatenate, Flatten, MaxPooling1D, RepeatVector,
-                          LSTM, Bidirectional, BatchNormalization, )
+                          LSTM, Bidirectional, BatchNormalization, Reshape)
 from keras.models import Model, Input
 import keras
 
@@ -46,13 +46,14 @@ class NotSoSmallLSTM(GeneralLSTM):
     def create_model(self):
         
         ### Context equity day
-#        eqt_code_input = Input(shape=[1], name='eqt_code_input')
-#        eqt_emb = Embedding(
-#            output_dim=self.eqt_embeddings_size,
-#            input_dim=self.n_eqt,
-#            input_length=1,
-#            name='eqt_embeddings')(eqt_code_input)
-#        eqt_emb = Dropout(self.dropout_spatial_rate)(eqt_emb)
+        eqt_code_input = Input(shape=[1], name='eqt_code_input')
+        eqt_emb = Embedding(
+            output_dim=self.eqt_embeddings_size,
+            input_dim=self.n_eqt,
+            input_length=1,
+            name='eqt_embeddings')(eqt_code_input)
+        eqt_emb = Dropout(self.dropout_spatial_rate)(eqt_emb)
+        eqt_emb = Reshape((self.eqt_embeddings_size,1))(eqt_emb)
 #        eqt_emb = Flatten()(eqt_emb)
 #        
 #        date_input = Input(shape=[1], name='date_input')
@@ -97,6 +98,7 @@ class NotSoSmallLSTM(GeneralLSTM):
         returns_input = Input(
             shape=(self.returns_length, 1), name='returns_input')
         
+        
         market_returns_input = Input(
             shape=(self.returns_length, 1), name='market_returns_input')
                         
@@ -108,6 +110,8 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         diference_to_eqt = keras.layers.Subtract()([
                 returns_input, eqt_avg_returns_input])
+    
+        returns_eqt = concatenate([returns_input, eqt_emb], axis = 1)
     
       
         market_returns_features = JANET(
@@ -129,7 +133,7 @@ class NotSoSmallLSTM(GeneralLSTM):
             return_sequences=False,
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = False,
-            kernel_initializer='random_uniform')(returns_input)
+            kernel_initializer='random_uniform')(returns_eqt)
         
         diff_to_market_features =  JANET(
             self.lstm_out_dim,
@@ -193,7 +197,8 @@ class NotSoSmallLSTM(GeneralLSTM):
 
         
         model = Model(
-            inputs=[nb_eqt_traded_input, 
+            inputs=[eqt_code_input,
+                    nb_eqt_traded_input, 
                     nb_nan_input,
                     nb_days_eqt_traded_input,
                     returns_input, 
@@ -202,7 +207,8 @@ class NotSoSmallLSTM(GeneralLSTM):
                     handmade_features_input],
             outputs=[output])
 
-        inputs = ["nb_eqt_traded", 
+        inputs = ["eqt_code_input",
+                  "nb_eqt_traded", 
                   "nb_nans_data",
                   'nb_days_eqt_traded',
                   "returns_input", 
