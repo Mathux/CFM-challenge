@@ -109,7 +109,7 @@ def plot_corr(df, size=10):
     import seaborn as sns
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(size, size))
-    sns.heatmap(df.corr(), annot=True)
+    sns.heatmap(df.corr(), annot=False)
 
 
 def get_data_matrix(embeddings):
