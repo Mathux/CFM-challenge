@@ -43,16 +43,15 @@ fit_params = {
 
 param_test = {
     'num_leaves': sp_randint(6, 50),
-    'min_child_samples': sp_randint(50, 130),
-    'min_child_weight': [1e-1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
-    'subsample': sp_uniform(loc=0.9639, scale=0.6),
-    'colsample_bytree': sp_uniform(loc=0.7295, scale=0.6),
-    'reg_alpha': [2, 2.5, 3, 4, 4.5, 5, 5.5, 6, 6.5, 7],
-    'reg_lambda': [1, 2, 3, 0, 0.5, 0.3, 0.1, 0.01, 0.001]
+    'min_child_samples': sp_randint(20, 100),
+    'min_child_weight': [1e-5, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4],
+    'subsample': sp_uniform(loc=0.2, scale=0.8),
+    'colsample_bytree': sp_uniform(loc=0.4, scale=0.6),
+    'reg_alpha': [0, 1e-1, 1, 2, 5, 7, 10, 50, 100],
+    'reg_lambda': [0, 1e-1, 1, 5, 10, 20, 50, 100]
 }
 
-
-n_HP_points_to_test = 300
+n_HP_points_to_test = 100
 
 clf = lgbm.LGBMClassifier(
     max_depth=-1,
@@ -104,7 +103,8 @@ if False:
 #from src.tools.utils import submission
 #submission(preds, test_id)
 
-# import shap
-# sht = shap.TreeExplainer(clf)
-# shval = sht.shap_values(data.train.data)
-# shap.summary_plot(shval, data.train.data)
+import shap
+sht = shap.TreeExplainer(clf)
+shval = sht.shap_values(data.train.data)
+shap.summary_plot(shval, data.train.data, max_display=5)
+# shap.dependence_plot("avg_return_date_eqt", shval, data.train.data)
