@@ -15,10 +15,20 @@ from src.tools.dataloader import Data
 
 data = Data(small=False, verbose=True, aggregate=False, ewma=False)
 
+not_return_cols = [col for col in data.train.data.columns if not col.endswith(':00')]
+data.train.data = data.train.data[not_return_cols]
+
+not_return_cols = [col for col in data.val.data.columns if not col.endswith(':00')]
+data.val.data = data.val.data[not_return_cols]
+
 data.train.data = data.train.data.drop(['ID','date'],axis = 1)
 data.val.data = data.val.data.drop(['ID','date'],axis = 1)
+
 test_id = data.test.data['ID']
+not_return_cols = [col for col in data.test.data.columns if not col.endswith(':00')]
+data.test.data = data.test.data[not_return_cols]
 data.test.data = data.test.data.drop(['ID','date'],axis = 1)
+
 train_labels = data.train.labels['end_of_day_return']
 val_labels = data.val.labels['end_of_day_return']
 
