@@ -235,7 +235,7 @@ if __name__ == '__main__':
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=True, verbose=True, ewma=False, aggregate=False)
+        small=False, verbose=True, ewma=False, aggregate=False)
 
     exp.addconfig("data", data.config)
 
