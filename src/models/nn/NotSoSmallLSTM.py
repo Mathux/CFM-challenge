@@ -96,16 +96,13 @@ class NotSoSmallLSTM(GeneralLSTM):
         ### Temporal informations
         returns_input = Input(shape=(self.returns_length, 1), name='returns_input')
         
-        
         market_returns_input = Input(shape=(self.returns_length, 1), name='market_returns_input')
                         
         eqt_avg_returns_input = Input(shape=(self.returns_length, 1), name='eqt_avg_returns_input')
         
-       # difference_to_market = keras.layers.Subtract()([
-       #         returns_input, market_returns_input])
+        ewma_input = Input(shape=(self.returns_length, 1), name='ewma_rolling_input')
         
-       # diference_to_eqt = keras.layers.Subtract()([
-       #         returns_input, eqt_avg_returns_input])
+        std_input = Input(shape=(self.returns_length, 1), name='var_rolling_input')
     
         returns_eqt = concatenate([returns_input, eqt_emb], axis = 1)
     
@@ -131,6 +128,20 @@ class NotSoSmallLSTM(GeneralLSTM):
             recurrent_dropout=self.dropout_lstm_rec, unroll = False,
             kernel_initializer='random_uniform')(returns_eqt)
         
+        rolling_features =  JANET(
+            self.lstm_out_dim,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+            kernel_initializer='random_uniform')(ewma_input)
+        
+        var_returns =  JANET(
+            self.lstm_out_dim,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+            kernel_initializer='random_uniform')(std_input)
+        
 #        diff_to_market_features =  JANET(
 #            self.lstm_out_dim,
 #            return_sequences=False,
@@ -147,7 +158,10 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         
         market_features = concatenate([returns_features,
-                                       market_returns_features])
+                                       eqt_avg_returns_features,
+                                       market_returns_features,
+                                       rolling_features,
+                                       var_returns])
 
         return_features = Dense(self.lstm_out_dim,activation = 'linear')(returns_features)
         return_features = PReLU()(return_features)
@@ -192,15 +206,19 @@ class NotSoSmallLSTM(GeneralLSTM):
         model = Model(
             inputs=[eqt_code_input,
                     returns_input,
-                    eqt_avg_input,
-                    market_returns_input, 
+                    eqt_avg_returns_input,
+                    market_returns_input,
+                    ewma_input,
+                    std_input,
                     handmade_features_input],
             outputs=[output])
 
         inputs = ["eqt_code_input",
                   "returns_input", 
                   "market_returns_input",
-                  "eqt_avg_input",
+                  "eqt_avg_returns",
+                  "rolling_ewma_returns",
+                  "rolling_var_returns",
                   "handmade_features_input"
                   ]
         return model, inputs
@@ -217,7 +235,7 @@ if __name__ == '__main__':
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=False, verbose=True, ewma=False, aggregate=False)
+        small=True, verbose=True, ewma=False, aggregate=False)
 
     exp.addconfig("data", data.config)
 

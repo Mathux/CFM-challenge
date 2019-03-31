@@ -97,98 +97,34 @@ class GeneralModel:
                     (temp_eqt_returns.shape[0], temp_eqt_returns.shape[1], 1))
                 data = data.drop(self.eqt_return_cols, axis=1)
                 return temp_eqt_returns
-
-            elif name == 'market_kurt_returns':
-                temp_kurt_returns = data.groupby('date')[
-                    self.return_cols].apply(pd.DataFrame.kurt)
-                data.set_index(['date'], inplace=True)
-                self.kurt_return_cols = [
-                    'kurt_returns_' + c for c in self.return_cols
-                ]
-                data[self.kurt_return_cols] = temp_kurt_returns
-                data.reset_index(inplace=True)
-                temp_kurt_returns = data[self.kurt_return_cols].values
-                temp_kurt_returns = temp_kurt_returns.reshape(
-                    (temp_kurt_returns.shape[0], temp_kurt_returns.shape[1],
-                     1))
-                data = data.drop(self.kurt_return_cols, axis=1)
-                return temp_kurt_returns
-
-            elif name == 'eqt_kurt_returns':
-                temp_eqt_kurt_returns = data.groupby('eqt_code')[
-                    self.return_cols].apply(pd.DataFrame.kurt)
-                data.set_index(['eqt_code'], inplace=True)
-                self.eqt_kurt_return_cols = [
-                    'eqt_kurt_returns_' + c for c in self.return_cols
-                ]
-                data[self.eqt_kurt_return_cols] = temp_eqt_kurt_returns
-                data.reset_index(inplace=True)
-                temp_eqt_kurt_returns = data[self.eqt_kurt_return_cols].values
-                temp_eqt_kurt_returns = temp_eqt_kurt_returns.reshape(
-                    (temp_eqt_kurt_returns.shape[0],
-                     temp_eqt_kurt_returns.shape[1], 1))
-                data = data.drop(self.eqt_kurt_return_cols, axis=1)
-                return np.nan_to_num(temp_eqt_kurt_returns)
-
-            elif name == "return_diff_to_market_input":
-                temp = self.scale(create_input('returns_input', data).squeeze() - create_input(
-                    'market_returns_input', data).squeeze())
-                return temp.reshape((temp.shape[0],temp.shape[1],1))
-
-            elif name == "log_vol_input":
-                temp_vol = np.log(np.abs(data[self.return_cols].values) + eps)
-                temp_vol = self.scale(temp_vol)
-                temp_vol = temp_vol.reshape((temp_vol.shape[0],
-                                             temp_vol.shape[1], 1))
-                return temp_vol
-
-            elif name == "market_log_vol_input":
-                temp_market_log_vol = (data.apply(lambda x: np.log(
-                    np.abs(x) + eps)))[self.return_cols]
-                temp_df = pd.DataFrame()
-                temp_df['date'] = data['date']
-                temp_df[self.return_cols] = temp_market_log_vol
-                temp_market_log_vol = temp_df.groupby('date')[
-                    self.return_cols].mean()
-                temp_df.set_index(['date'], inplace=True)
-                self.market_log_vol_cols = [
-                    'market_log_vol_' + c for c in self.return_cols
-                ]
-                temp_df[self.market_log_vol_cols] = temp_market_log_vol
-                temp_df.reset_index(inplace=True)
-                temp_market_log_vol = temp_df[self.market_log_vol_cols].values
-                temp_market_log_vol = self.scale(temp_market_log_vol)
-                temp_market_log_vol = temp_market_log_vol.reshape(
-                    (temp_market_log_vol.shape[0],
-                     temp_market_log_vol.shape[1], 1))
-                del temp_df
-                return temp_market_log_vol
-
-            elif name == "log_vol_diff_to_market_input":
-                temp = create_input('log_vol_input',data) - create_input(
-                    'market_log_vol_input',data)
-                temp = self.scale(temp)
-                return 
-            elif name == 'eqt_avg_log_vol':
-                temp_eqt_log_vol = data.groupby('eqt_code')[
-                    self.return_cols].mean()
-                data.set_index(['eqt_code'], inplace=True)
-                self.eqt_log_vol_cols = [
-                    'eqt_log_vol_' + c for c in self.return_cols
-                ]
-                data[self.eqt_log_vol_cols] = temp_eqt_log_vol
-                data.reset_index(inplace=True)
-                temp_eqt_log_vol = data[self.eqt_log_vol_cols].values
-                temp_eqt_log_vol = temp_eqt_log_vol.reshape(
-                    (temp_eqt_log_vol.shape[0], temp_eqt_log_vol.shape[1], 1))
-                data = data.drop(self.eqt_log_vol_cols, axis=1)
-                return temp_eqt_log_vol
-
+            
             elif name == "handmade_features_input":
                 temp_non_return_cols = [col for col in self.non_return_cols]
-                
                 return self.scale(data[temp_non_return_cols].values)
+            
+            elif name == 'rolling_ewma_returns' :
+                temp_returns = data[self.return_cols].ewm(halflife = 1.5).mean().values
+                temp_returns = temp_returns.reshape((temp_returns.shape[0],
+                                                     temp_returns.shape[1], 1))
+                return temp_returns
+            
+            elif name == 'rolling_var_returns' : 
+                temp_returns = data.groupby('eqt_code')[self.return_cols]
+                temp_var = temp_returns.std().rolling(11, min_periods= 1, axis = 1).sum()
+                data.set_index(['eqt_code'], inplace=True)
+                self.var_return_cols = [
+                    'var_' + c for c in self.return_cols
+                ]
+                data[self.var_return_cols] = temp_var
+                data.reset_index(inplace=True)
+                temp_var = data[self.var_return_cols].values
+                temp_var = temp_var.reshape(
+                    (temp_var.shape[0], temp_var.shape[1], 1))
+                return temp_var
+                
+                
         input_data = [create_input(name, data) for name in self.inputnames]
+        
 
         if labels is not None:
             labels = to_categorical(
