@@ -55,13 +55,15 @@ class NotSoSmallLSTM(GeneralLSTM):
         eqt_emb = Reshape((self.eqt_embeddings_size,1))(eqt_emb)
 #        eqt_emb = Flatten()(eqt_emb)
 #        
-#        date_input = Input(shape=[1], name='date_input')
-#        date_emb= Embedding(
-#            output_dim=self.eqt_embeddings_size,
-#            input_dim=1512,
-#            input_length=1,
-#            name='date_embeddings')(date_input)
-#        date_emb = Dropout(self.dropout_spatial_rate)(date_emb)
+        date_input = Input(shape=[1], name='date_input')
+        date_emb= Embedding(
+            output_dim=self.eqt_embeddings_size,
+            input_dim=1512,
+            input_length=1,
+            name='date_embeddings')(date_input)
+        date_emb = Dropout(self.dropout_spatial_rate)(date_emb)
+        date_emb = Reshape((self.eqt_embeddings_size,1))(date_emb)
+
 #        date_emb = Flatten()(date_emb)
  
 #        nb_eqt_traded_input = Input(shape=[1], name='nb_eqt_traded_input')
@@ -104,7 +106,7 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         std_input = Input(shape=(self.returns_length, 1), name='var_rolling_input')
     
-        returns_eqt = concatenate([returns_input, eqt_emb], axis = 1)
+        returns_eqt = concatenate([returns_input, eqt_emb, date_emb], axis = 1)
     
       
         market_returns_features = JANET(
@@ -170,7 +172,16 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         market_features = Dense(self.lstm_out_dim,activation = 'linear')(market_features)
         market_features = PReLU()(market_features)
+        market_features = Dropout(self.dropout_rate)(market_features)
         market_features = BatchNormalization()(market_features)
+        
+        
+        return_market_features = concatenate([market_features, return_features])
+        return_market_features = Dense(64,activation = 'linear')(return_market_features)
+        return_market_features = PReLU()(return_market_features)
+        return_market_features = Dropout(self.dropout_rate)(return_market_features)
+        return_market_features = BatchNormalization()(return_market_features)
+        
         
         ###Handmade Features input
         handmade_features_input = Input(shape = (len(self.non_return_cols)-2,), 
@@ -181,10 +192,9 @@ class NotSoSmallLSTM(GeneralLSTM):
         handmade_features = BatchNormalization()(handmade_features)
         
         ### Final Concatenation
-        x = concatenate([market_features, return_features, 
-                        handmade_features_input])
+        x = concatenate([return_market_features,handmade_features_input])
         
-        x = Dense(128,activation = 'linear')(x)
+        x = Dense(64,activation = 'linear')(x)
         
         x = PReLU()(x)
         
@@ -192,19 +202,20 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         x = BatchNormalization()(x)
         
-        x = Dense(128,activation = 'linear')(x)
-        
-        x = PReLU()(x)
-
-        x = Dropout(self.dropout_rate)(x)
-        
-        x = BatchNormalization()(x)
+#        x = Dense(128,activation = 'linear')(x)
+#        
+#        x = PReLU()(x)
+#
+#        x = Dropout(self.dropout_rate)(x)
+#        
+#        x = BatchNormalization()(x)
         
         output = Dense(2,activation = 'softmax',name = 'output')(x)
 
         
         model = Model(
             inputs=[eqt_code_input,
+                    date_input,
                     returns_input,
                     eqt_avg_returns_input,
                     market_returns_input,
@@ -214,6 +225,7 @@ class NotSoSmallLSTM(GeneralLSTM):
             outputs=[output])
 
         inputs = ["eqt_code_input",
+                  "date",
                   "returns_input", 
                   "market_returns_input",
                   "eqt_avg_returns",
