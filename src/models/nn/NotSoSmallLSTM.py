@@ -20,11 +20,10 @@ from src.models.nn.janet import JANET
 class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
-                 eqt_embeddings_size=80,
+                 eqt_embeddings_size=10,
                  lstm_out_dim=128,
-                 use_lstm=True,
                  dropout_rate=0.5,
-                 dropout_spatial_rate=0.3,
+                 dropout_spatial_rate=0.5,
                  dropout_lstm=0.5,
                  dropout_lstm_rec=0.5,
                  loss='binary_crossentropy',
@@ -33,7 +32,7 @@ class NotSoSmallLSTM(GeneralLSTM):
             data,
             eqt_embeddings_size=eqt_embeddings_size,
             lstm_out_dim=lstm_out_dim,
-            use_lstm=use_lstm,
+            use_lstm=True,
             dropout_rate=dropout_rate,
             dropout_spatial_rate=dropout_spatial_rate,
             dropout_lstm=dropout_lstm,
@@ -52,7 +51,7 @@ class NotSoSmallLSTM(GeneralLSTM):
             input_dim=self.n_eqt,
             input_length=1,
             name='eqt_embeddings')(eqt_code_input)
-        eqt_emb = Dropout(self.dropout_spatial_rate)(eqt_emb)
+        eqt_emb = SpatialDropout1D(self.dropout_spatial_rate)(eqt_emb)
         eqt_emb = Reshape((self.eqt_embeddings_size,1))(eqt_emb)
 #        eqt_emb = Flatten()(eqt_emb)
 #        
@@ -95,34 +94,31 @@ class NotSoSmallLSTM(GeneralLSTM):
 #        context_eqt_day = BatchNormalization()(context_eqt_day)
 #        
         ### Temporal informations
-        returns_input = Input(
-            shape=(self.returns_length, 1), name='returns_input')
+        returns_input = Input(shape=(self.returns_length, 1), name='returns_input')
         
         
-        market_returns_input = Input(
-            shape=(self.returns_length, 1), name='market_returns_input')
+        market_returns_input = Input(shape=(self.returns_length, 1), name='market_returns_input')
                         
-        eqt_avg_returns_input = Input(
-                shape=(self.returns_length, 1), name='eqt_avg_returns_input')
+        eqt_avg_returns_input = Input(shape=(self.returns_length, 1), name='eqt_avg_returns_input')
         
-        difference_to_market = keras.layers.Subtract()([
-                returns_input, market_returns_input])
+       # difference_to_market = keras.layers.Subtract()([
+       #         returns_input, market_returns_input])
         
-        diference_to_eqt = keras.layers.Subtract()([
-                returns_input, eqt_avg_returns_input])
+       # diference_to_eqt = keras.layers.Subtract()([
+       #         returns_input, eqt_avg_returns_input])
     
         returns_eqt = concatenate([returns_input, eqt_emb], axis = 1)
     
       
         market_returns_features = JANET(
-            self.lstm_out_dim,
+            self.lstm_out_dim//2,
             return_sequences=False,
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = False,
             kernel_initializer='random_uniform')(market_returns_input)
         
         eqt_avg_returns_features = JANET(
-            self.lstm_out_dim,
+            self.lstm_out_dim//2,
             return_sequences=False,
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = False,
@@ -151,7 +147,6 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         
         market_features = concatenate([returns_features,
-                                       eqt_avg_returns_features,
                                        market_returns_features])
 
         return_features = Dense(self.lstm_out_dim,activation = 'linear')(returns_features)
@@ -164,9 +159,9 @@ class NotSoSmallLSTM(GeneralLSTM):
         market_features = BatchNormalization()(market_features)
         
         ###Handmade Features input
-        handmade_features_input = Input(shape = (len(self.non_return_cols)-3,), 
+        handmade_features_input = Input(shape = (len(self.non_return_cols),), 
                                   name = 'handmade_features')
-        handmade_features = Dense(32, activation = 'linear')(handmade_features_input)
+        handmade_features = Dense(64, activation = 'linear')(handmade_features_input)
         handmade_features = PReLU()(handmade_features)
         handmade_features = Dropout(self.dropout_rate)(handmade_features)
         handmade_features = BatchNormalization()(handmade_features)
@@ -196,22 +191,16 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         model = Model(
             inputs=[eqt_code_input,
-                    nb_eqt_traded_input, 
-                    nb_nan_input,
-                    nb_days_eqt_traded_input,
-                    returns_input, 
+                    returns_input,
+                    eqt_avg_input,
                     market_returns_input, 
-                    eqt_avg_returns_input,
                     handmade_features_input],
             outputs=[output])
 
         inputs = ["eqt_code_input",
-                  "nb_eqt_traded", 
-                  "nb_nans_data",
-                  'nb_days_eqt_traded',
                   "returns_input", 
                   "market_returns_input",
-                  "eqt_avg_returns", 
+                  "eqt_avg_input",
                   "handmade_features_input"
                   ]
         return model, inputs
@@ -228,14 +217,14 @@ if __name__ == '__main__':
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=True, verbose=True, ewma=False, aggregate=False)
+        small=False, verbose=True, ewma=False, aggregate=False)
 
     exp.addconfig("data", data.config)
 
-    model = NotSoSmallLSTM(data, use_lstm=True)
+    model = NotSoSmallLSTM(data)
     exp.addconfig("model", model.config)
-    from keras.utils import plot_model
-    plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
+   # from keras.utils import plot_model
+   # plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
 
     model.model.summary()
     # Fit the model
@@ -243,7 +232,7 @@ if __name__ == '__main__':
         checkpointname=exp.modelname,
         epochs=EPOCHS,
         plateau_patience=5,
-        stop_patience=30,
+        stop_patience=15,
         verbose=1,
         batch_size=8192,
         best = True,

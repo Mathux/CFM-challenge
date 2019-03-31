@@ -185,10 +185,7 @@ class GeneralModel:
                 return temp_eqt_log_vol
 
             elif name == "handmade_features_input":
-                temp_non_return_cols = [col for col in self.non_return_cols if 
-                                        not col in ['return_nan',
-                                                    'countd_date',
-                                                    'countd_product']]
+                temp_non_return_cols = [col for col in self.non_return_cols]
                 
                 return self.scale(data[temp_non_return_cols].values)
         input_data = [create_input(name, data) for name in self.inputnames]
