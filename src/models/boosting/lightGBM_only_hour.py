@@ -17,8 +17,19 @@ data = Data(small=False, verbose=True, aggregate=False, ewma=False)
 
 data.train.data = data.train.data.drop(['ID','date'],axis = 1)
 data.val.data = data.val.data.drop(['ID','date'],axis = 1)
+
+not_return_cols = [col for col in data.train.data.columns if col.endswith(':00')]
+data.train.data = data.train.data[not_return_cols]
+
+not_return_cols = [col for col in data.val.data.columns if col.endswith(':00')]
+data.val.data = data.val.data[not_return_cols]
+
+
 test_id = data.test.data['ID']
 data.test.data = data.test.data.drop(['ID','date'],axis = 1)
+not_return_cols = [col for col in data.test.data.columns if col.endswith(':00')]
+data.test.data = data.test.data[not_return_cols]
+
 train_labels = data.train.labels['end_of_day_return']
 val_labels = data.val.labels['end_of_day_return']
 

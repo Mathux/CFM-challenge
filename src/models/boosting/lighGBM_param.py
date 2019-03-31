@@ -13,7 +13,7 @@ from sklearn import model_selection
 
 from src.tools.dataloader import Data
 
-data = Data(small=False, verbose=True, aggregate=False, ewma=False)
+data = Data(small=True, verbose=True, aggregate=False, ewma=False)
 
 data.train.data = data.train.data.drop(['ID','date'],axis = 1)
 data.val.data = data.val.data.drop(['ID','date'],axis = 1)
@@ -41,17 +41,19 @@ fit_params = {
     'categorical_feature': 'auto'
 }
 
+params = {'colsample_bytree': 0.5376368474229698, 'min_child_samples': 544, 'min_child_weight': 1, 'num_leaves': 45, 'reg_alpha': 2, 'reg_lambda': 100, 'subsample': 0.5625926774630648}
+
 param_test = {
     'num_leaves': sp_randint(6, 50),
-    'min_child_samples': sp_randint(50, 130),
-    'min_child_weight': [1e-1, 1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
-    'subsample': sp_uniform(loc=0.9, scale=0.1),
-    'colsample_bytree': sp_uniform(loc=0.7, scale=0.3),
-    'reg_alpha': [2, 2.5, 3, 4, 4.5, 5, 5.5, 6, 6.5, 7],
-    'reg_lambda': [1, 2, 3, 0, 0.5, 0.3, 0.1, 0.01, 0.001]
+    'min_child_samples': sp_randint(20, 100),
+    'min_child_weight': [1e-5, 1e-3, 1e-2, 1e-1, 1, 1e1, 1e2, 1e3, 1e4],
+    'subsample': sp_uniform(loc=0.2, scale=0.8),
+    'colsample_bytree': sp_uniform(loc=0.4, scale=0.6),
+    'reg_alpha': [0, 1e-1, 1, 2, 5, 7, 10, 50, 100],
+    'reg_lambda': [0, 1e-1, 1, 5, 10, 20, 50, 100]
 }
 
-n_HP_points_to_test = 500
+n_HP_points_to_test = 100
 
 clf = lgbm.LGBMClassifier(
     max_depth=-1,
@@ -72,7 +74,7 @@ gs = model_selection.RandomizedSearchCV(
     refit=True,
     random_state=42,
     verbose=True,
-)
+    )
 
 gs.fit(data.train.data, train_labels, **fit_params)
 print('Best score reached: {} with params: {} '.format(gs.best_score_,
@@ -103,7 +105,8 @@ if False:
 #from src.tools.utils import submission
 #submission(preds, test_id)
 
-# import shap
-# sht = shap.TreeExplainer(clf)
-# shval = sht.shap_values(data.train.data)
-# shap.summary_plot(shval, data.train.data)
+import shap
+sht = shap.TreeExplainer(clf)
+shval = sht.shap_values(data.train.data)
+shap.summary_plot(shval, data.train.data, max_display=5)
+# shap.dependence_plot("avg_return_date_eqt", shval, data.train.data)
