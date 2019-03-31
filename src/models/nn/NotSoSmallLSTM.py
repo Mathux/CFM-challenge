@@ -21,7 +21,7 @@ class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
                  eqt_embeddings_size=20,
-                 lstm_out_dim=150,
+                 lstm_out_dim=200,
                  dropout_rate=0.5,
                  dropout_spatial_rate=0.5,
                  dropout_lstm=0.5,
@@ -98,30 +98,30 @@ class NotSoSmallLSTM(GeneralLSTM):
         ### Temporal informations
         returns_input = Input(shape=(self.returns_length, 1), name='returns_input')
         
-        market_returns_input = Input(shape=(self.returns_length, 1), name='market_returns_input')
-                        
-        eqt_avg_returns_input = Input(shape=(self.returns_length, 1), name='eqt_avg_returns_input')
-        
-        ewma_input = Input(shape=(self.returns_length, 1), name='ewma_rolling_input')
-        
-        std_input = Input(shape=(self.returns_length, 1), name='var_rolling_input')
-    
+#        market_returns_input = Input(shape=(self.returns_length, 1), name='market_returns_input')
+#                        
+#        eqt_avg_returns_input = Input(shape=(self.returns_length, 1), name='eqt_avg_returns_input')
+#        
+#        ewma_input = Input(shape=(self.returns_length, 1), name='ewma_rolling_input')
+#        
+#        std_input = Input(shape=(self.returns_length, 1), name='var_rolling_input')
+#    
         returns_eqt = concatenate([returns_input, eqt_emb, date_emb], axis = 1)
     
       
-        market_returns_features = JANET(
-            self.lstm_out_dim//2,
-            return_sequences=False,
-            dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
-            kernel_initializer='random_uniform')(market_returns_input)
+#        market_returns_features = JANET(
+#            self.lstm_out_dim//2,
+#            return_sequences=False,
+#            dropout=self.dropout_lstm,
+#            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+#            kernel_initializer='random_uniform')(market_returns_input)
         
-        eqt_avg_returns_features = JANET(
-            self.lstm_out_dim//2,
-            return_sequences=False,
-            dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
-            kernel_initializer='random_uniform')(eqt_avg_returns_input)
+#        eqt_avg_returns_features = JANET(
+#            self.lstm_out_dim//2,
+#            return_sequences=False,
+#            dropout=self.dropout_lstm,
+#            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+#            kernel_initializer='random_uniform')(eqt_avg_returns_input)
                         
         returns_features =  JANET(
             self.lstm_out_dim,
@@ -130,19 +130,19 @@ class NotSoSmallLSTM(GeneralLSTM):
             recurrent_dropout=self.dropout_lstm_rec, unroll = False,
             kernel_initializer='random_uniform')(returns_eqt)
         
-        rolling_features =  JANET(
-            self.lstm_out_dim,
-            return_sequences=False,
-            dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
-            kernel_initializer='random_uniform')(ewma_input)
+ #       rolling_features =  JANET(
+ #           self.lstm_out_dim,
+ #           return_sequences=False,
+ #           dropout=self.dropout_lstm,
+ #           recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+ #           kernel_initializer='random_uniform')(ewma_input)
         
-        var_returns =  JANET(
-            self.lstm_out_dim,
-            return_sequences=False,
-            dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
-            kernel_initializer='random_uniform')(std_input)
+ #       var_returns =  JANET(
+ #           self.lstm_out_dim,
+ #           return_sequences=False,
+ #           dropout=self.dropout_lstm,
+ #           recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+ #           kernel_initializer='random_uniform')(std_input)
         
 #        diff_to_market_features =  JANET(
 #            self.lstm_out_dim,
@@ -159,28 +159,28 @@ class NotSoSmallLSTM(GeneralLSTM):
 #            kernel_initializer='random_uniform')(diference_to_eqt)
         
         
-        market_features = concatenate([returns_features,
-                                       eqt_avg_returns_features,
-                                       market_returns_features,
-                                       rolling_features,
-                                       var_returns])
+ #       market_features = concatenate([returns_features,
+ #                                      eqt_avg_returns_features,
+ #                                      market_returns_features,
+ #                                      rolling_features,
+ #                                      var_returns])
 
         return_features = Dense(self.lstm_out_dim,activation = 'linear')(returns_features)
         return_features = PReLU()(return_features)
         return_features = Dropout(self.dropout_rate)(return_features)
         return_features = BatchNormalization()(return_features)
         
-        market_features = Dense(self.lstm_out_dim,activation = 'linear')(market_features)
-        market_features = PReLU()(market_features)
-        market_features = Dropout(self.dropout_rate)(market_features)
-        market_features = BatchNormalization()(market_features)
+ #       market_features = Dense(self.lstm_out_dim,activation = 'linear')(market_features)
+ #       market_features = PReLU()(market_features)
+ #       market_features = Dropout(self.dropout_rate)(market_features)
+ #       market_features = BatchNormalization()(market_features)
         
         
-        return_market_features = concatenate([market_features, return_features])
-        return_market_features = Dense(64,activation = 'linear')(return_market_features)
-        return_market_features = PReLU()(return_market_features)
-        return_market_features = Dropout(self.dropout_rate)(return_market_features)
-        return_market_features = BatchNormalization()(return_market_features)
+ #       return_market_features = concatenate([market_features, return_features])
+ #       return_market_features = Dense(64,activation = 'linear')(return_market_features)
+ #       return_market_features = PReLU()(return_market_features)
+ #       return_market_features = Dropout(self.dropout_rate)(return_market_features)
+ #       return_market_features = BatchNormalization()(return_market_features)
         
         
         ###Handmade Features input
@@ -192,7 +192,7 @@ class NotSoSmallLSTM(GeneralLSTM):
         handmade_features = BatchNormalization()(handmade_features)
         
         ### Final Concatenation
-        x = concatenate([return_market_features,handmade_features_input])
+        x = concatenate([return_features,handmade_features_input])
         
         x = Dense(64,activation = 'linear')(x)
         
@@ -217,20 +217,12 @@ class NotSoSmallLSTM(GeneralLSTM):
             inputs=[eqt_code_input,
                     date_input,
                     returns_input,
-                    eqt_avg_returns_input,
-                    market_returns_input,
-                    ewma_input,
-                    std_input,
                     handmade_features_input],
             outputs=[output])
 
         inputs = ["eqt_code_input",
                   "date",
                   "returns_input", 
-                  "market_returns_input",
-                  "eqt_avg_returns",
-                  "rolling_ewma_returns",
-                  "rolling_var_returns",
                   "handmade_features_input"
                   ]
         return model, inputs
