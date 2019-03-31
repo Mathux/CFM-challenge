@@ -153,7 +153,7 @@ class GeneralModel:
                 "lr": 0.001,
                 "rho": 0.9,
                 "epsilon": None,
-                "decay": 0,
+                "decay": 10**-7,
                 "name": "RMSprop",
             }
 
@@ -204,7 +204,7 @@ class GeneralModel:
 
         conf["ReduceLROnPlateau"] = {
             "monitor": "val_loss",
-            "factor": 0.9,
+            "factor": 0.5,
             "patience": plateau_patience,
             "min_lr": 10**-6
         }
@@ -235,7 +235,7 @@ class GeneralModel:
                 batch_size=conf["batch_size"],
                 verbose=verbose,
                 validation_data=(X_val, y_val),
-                callbacks=[checkpointer, early_stop, reduce_lr, clr])
+                callbacks=[checkpointer, early_stop, reduce_lr])
         else:
             history = []
             for k in range(kfold):
