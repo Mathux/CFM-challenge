@@ -99,7 +99,7 @@ class GeneralModel:
                 return temp_eqt_returns
             
             elif name == "handmade_features_input":
-                temp_non_return_cols = [col for col in self.non_return_cols]
+                temp_non_return_cols = [col for col in self.non_return_cols if not col in ["kurt_return_date_eqt", 'skew_return_date_eqt','max_drawdown_return_date_eqt']]
                 return self.scale(data[temp_non_return_cols].values)
             
             elif name == 'rolling_ewma_returns' :
@@ -139,7 +139,7 @@ class GeneralModel:
     def compile_fit(self,
                     checkpointname,
                     epochs=50,
-                    plateau_patience=10,
+                    plateau_patience=15,
                     stop_patience=15,
                     batch_size=8192,
                     verbose=0,
@@ -214,7 +214,7 @@ class GeneralModel:
         early_stop, checkpointer, reduce_lr, clr = callbacks_intrain()
                 
         self.model.compile(
-            optimizer='adam',
+            optimizer=opti,
             loss={'output': self.loss},
             metrics={'output': conf["metrics"]},
             loss_weights=[1])

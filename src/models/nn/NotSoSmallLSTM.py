@@ -20,8 +20,8 @@ from src.models.nn.janet import JANET
 class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
-                 eqt_embeddings_size=10,
-                 lstm_out_dim=64,
+                 eqt_embeddings_size=20,
+                 lstm_out_dim=150,
                  dropout_rate=0.5,
                  dropout_spatial_rate=0.5,
                  dropout_lstm=0.5,
@@ -168,37 +168,37 @@ class NotSoSmallLSTM(GeneralLSTM):
         return_features = Dropout(self.dropout_rate)(return_features)
         return_features = BatchNormalization()(return_features)
         
-#        market_features = Dense(self.lstm_out_dim,activation = 'linear')(market_features)
-#        market_features = PReLU()(market_features)
-#        market_features = BatchNormalization()(market_features)
+        market_features = Dense(self.lstm_out_dim,activation = 'linear')(market_features)
+        market_features = PReLU()(market_features)
+        market_features = BatchNormalization()(market_features)
         
         ###Handmade Features input
-        handmade_features_input = Input(shape = (len(self.non_return_cols),), 
+        handmade_features_input = Input(shape = (len(self.non_return_cols)-2,), 
                                   name = 'handmade_features')
-#        handmade_features = Dense(64, activation = 'linear')(handmade_features_input)
-#        handmade_features = PReLU()(handmade_features)
-#        handmade_features = Dropout(self.dropout_rate)(handmade_features)
-#        handmade_features = BatchNormalization()(handmade_features)
+        handmade_features = Dense(64, activation = 'linear')(handmade_features_input)
+        handmade_features = PReLU()(handmade_features)
+        handmade_features = Dropout(self.dropout_rate)(handmade_features)
+        handmade_features = BatchNormalization()(handmade_features)
         
         ### Final Concatenation
         x = concatenate([market_features, return_features, 
                         handmade_features_input])
         
-#        x = Dense(128,activation = 'linear')(x)
-#        
-#        x = PReLU()(x)
-#        
-#        x = Dropout(self.dropout_rate)(x)
-#        
-#        x = BatchNormalization()(x)
+        x = Dense(128,activation = 'linear')(x)
         
-#        x = Dense(128,activation = 'linear')(x)
-#        
-#        x = PReLU()(x)
-#        
-#        x = Dropout(self.dropout_rate)(x)
-#        
-#        x = BatchNormalization()(x)
+        x = PReLU()(x)
+        
+        x = Dropout(self.dropout_rate)(x)
+        
+        x = BatchNormalization()(x)
+        
+        x = Dense(128,activation = 'linear')(x)
+        
+        x = PReLU()(x)
+
+        x = Dropout(self.dropout_rate)(x)
+        
+        x = BatchNormalization()(x)
         
         output = Dense(2,activation = 'softmax',name = 'output')(x)
 
