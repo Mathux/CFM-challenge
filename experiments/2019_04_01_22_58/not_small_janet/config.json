@@ -1,0 +1,51 @@
+{
+    "data": {
+        "embeddings": null,
+        "ewma": false,
+        "kfold": -1,
+        "scaler": "StandardScaler",
+        "seed": 500,
+        "small": false,
+        "split": true,
+        "split_val": 0.1
+    },
+    "learning": {
+        "EarlyStopping": {
+            "monitor": "val_loss",
+            "patience": 50
+        },
+        "ModelCheckpoint": {
+            "save_best_only": true,
+            "save_weights_only": true
+        },
+        "ReduceLROnPlateau": {
+            "factor": 0.5,
+            "min_lr": 1e-06,
+            "monitor": "val_loss",
+            "patience": 5
+        },
+        "batch_size": 8192,
+        "epochs": 500,
+        "metrics": [
+            "acc"
+        ],
+        "optimizer": {
+            "decay": 1e-07,
+            "epsilon": null,
+            "lr": 0.001,
+            "name": "RMSprop",
+            "rho": 0.9
+        }
+    },
+    "model": {
+        "dropout_rate": 0.5,
+        "dropout_spatial_rate": 0.5,
+        "droupout_lstm": 0.5,
+        "droupout_lstm_rec": 0.5,
+        "eqt_embeddings_size": 20,
+        "kernel_size": 3,
+        "loss": "binary_crossentropy",
+        "lstm_out_dim": 50,
+        "use_lstm": true
+    }
+}

@@ -134,7 +134,8 @@ def progressBar(value, endvalue, bar_length=50):
 
 
 def plot_tsne(data):
-    tsne = TSNE(n_components=2)
+    from sklearn.metrics.pairwise import cosine_similarity
+    tsne = TSNE(n_components=2, learning_rate= 1000, metric = cosine_similarity)
     X_r = tsne.fit_transform(data)
     plt.scatter(X_r[:, 0], X_r[:, 1])
     plt.show()

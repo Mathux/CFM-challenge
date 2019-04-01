@@ -23,7 +23,7 @@ class Data:
                  small=False,
                  embeddings=None,
                  ewma=False,
-                 aggregate=True):
+                 aggregate=False):
         if small:
             print("Warning! Using small datasets..")
 
