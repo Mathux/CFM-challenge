@@ -21,7 +21,7 @@ class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
                  eqt_embeddings_size=20,
-                 lstm_out_dim=150,
+                 lstm_out_dim=50,
                  dropout_rate=0.5,
                  dropout_spatial_rate=0.5,
                  dropout_lstm=0.5,
@@ -48,23 +48,23 @@ class NotSoSmallLSTM(GeneralLSTM):
         ### Temporal informations
         returns_input = Input(shape=(self.returns_length, 1), name='returns_input')
         
-        returns_features =  JANET(
+        return_features =  JANET(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
             recurrent_dropout=self.dropout_lstm_rec, unroll = False,
             kernel_initializer='random_uniform')(returns_input)
         
-        return_features = Dense(self.lstm_out_dim,activation = 'linear')(returns_features)
-        return_features = PReLU()(return_features)
-        return_features = Dropout(self.dropout_rate)(return_features)
-        return_features = BatchNormalization()(return_features)
+       # return_features = Dense(,activation = 'linear')(returns_features)
+       # return_features = PReLU()(return_features)
+       # return_features = Dropout(self.dropout_rate)(return_features)
+       # return_features = BatchNormalization()(return_features)
         
         
         ###Handmade Features input
         handmade_features_input = Input(shape = (8,), 
                                   name = 'handmade_features')
-        handmade_features = Dense(64, activation = 'linear')(handmade_features_input)
+        handmade_features = Dense(32, activation = 'linear')(handmade_features_input)
         handmade_features = PReLU()(handmade_features)
         handmade_features = Dropout(self.dropout_rate)(handmade_features)
         handmade_features = BatchNormalization()(handmade_features)
@@ -72,7 +72,7 @@ class NotSoSmallLSTM(GeneralLSTM):
         ### Final Concatenation
         x = concatenate([return_features,handmade_features_input])
         
-        x = Dense(64,activation = 'linear')(x)
+        x = Dense(32,activation = 'linear')(x)
         
         x = PReLU()(x)
         
@@ -80,13 +80,13 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         x = BatchNormalization()(x)
         
-#        x = Dense(128,activation = 'linear')(x)
-#        
-#        x = PReLU()(x)
-#
-#        x = Dropout(self.dropout_rate)(x)
-#        
-#        x = BatchNormalization()(x)
+        x = Dense(32,activation = 'linear')(x)
+        
+        x = PReLU()(x)
+
+        x = Dropout(self.dropout_rate)(x)
+        
+        x = BatchNormalization()(x)
         
         output = Dense(2,activation = 'softmax',name = 'output')(x)
 
@@ -114,14 +114,14 @@ if __name__ == '__main__':
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
-        small=True, verbose=True, ewma=False, aggregate=False)
+        small=False, verbose=True, ewma=False, aggregate=False)
 
     exp.addconfig("data", data.config)
 
     model = NotSoSmallLSTM(data)
     exp.addconfig("model", model.config)
-    from keras.utils import plot_model
-    plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
+   # from keras.utils import plot_model
+   # plot_model(model.model, to_file=exp.pnggraph, show_shapes=True)
 
     model.model.summary()
     # Fit the model
