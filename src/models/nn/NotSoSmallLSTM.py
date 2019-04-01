@@ -55,14 +55,14 @@ class NotSoSmallLSTM(GeneralLSTM):
         eqt_emb = Reshape((self.eqt_embeddings_size,1))(eqt_emb)
 #        eqt_emb = Flatten()(eqt_emb)
 #        
-        date_input = Input(shape=[1], name='date_input')
-        date_emb= Embedding(
-            output_dim=self.eqt_embeddings_size,
-            input_dim=1512,
-            input_length=1,
-            name='date_embeddings')(date_input)
-        date_emb = SpatialDropout1D(self.dropout_spatial_rate)(date_emb)
-        date_emb = Reshape((self.eqt_embeddings_size,1))(date_emb)
+#        date_input = Input(shape=[1], name='date_input')
+#        date_emb= Embedding(
+#            output_dim=self.eqt_embeddings_size,
+#            input_dim=1512,
+#            input_length=1,
+#            name='date_embeddings')(date_input)
+#        date_emb = SpatialDropout1D(self.dropout_spatial_rate)(date_emb)
+#        date_emb = Reshape((self.eqt_embeddings_size,1))(date_emb)
 
 #        date_emb = Flatten()(date_emb)
  
@@ -106,7 +106,7 @@ class NotSoSmallLSTM(GeneralLSTM):
 #        
 #        std_input = Input(shape=(self.returns_length, 1), name='var_rolling_input')
 #    
-        returns_eqt = concatenate([returns_input, eqt_emb, date_emb], axis = 1)
+        returns_eqt = concatenate([returns_input, eqt_emb], axis = 1)
     
       
         market_returns_features = JANET(
@@ -212,7 +212,6 @@ class NotSoSmallLSTM(GeneralLSTM):
         
         model = Model(
             inputs=[eqt_code_input,
-                    date_input,
                     nb_eqt_traded_input,
                     nb_nan_input,
                     nb_days_eqt_traded_input,
@@ -223,7 +222,6 @@ class NotSoSmallLSTM(GeneralLSTM):
             outputs=[output])
 
         inputs = ["eqt_code_input",
-                  "date",
                   "nb_eqt_traded",
                   "nb_nans_data",
                   "nb_days_eqt_traded",
