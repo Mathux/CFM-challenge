@@ -55,10 +55,10 @@ class NotSoSmallLSTM(GeneralLSTM):
             recurrent_dropout=self.dropout_lstm_rec, unroll = False,
             kernel_initializer='random_uniform')(returns_input)
         
-       # return_features = Dense(,activation = 'linear')(returns_features)
-       # return_features = PReLU()(return_features)
-       # return_features = Dropout(self.dropout_rate)(return_features)
-       # return_features = BatchNormalization()(return_features)
+        return_features = Dense(32,activation = 'linear')(return_features)
+        return_features = PReLU()(return_features)
+        return_features = Dropout(self.dropout_rate)(return_features)
+        return_features = BatchNormalization()(return_features)
         
         
         ###Handmade Features input
