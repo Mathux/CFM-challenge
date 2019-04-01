@@ -213,6 +213,9 @@ class NotSoSmallLSTM(GeneralLSTM):
         model = Model(
             inputs=[eqt_code_input,
                     date_input,
+                    nb_eqt_traded_input,
+                    nb_nan_input,
+                    nb_days_eqt_traded_input,
                     returns_input,
                     market_returns_input,
                     eqt_avg_returns_input,
@@ -221,6 +224,9 @@ class NotSoSmallLSTM(GeneralLSTM):
 
         inputs = ["eqt_code_input",
                   "date",
+                  "nb_eqt_traded",
+                  "nb_nans_data",
+                  "nb_days_eqt_traded",
                   "returns_input",
                   "market_returns_input",
                   "eqt_avg_returns",
