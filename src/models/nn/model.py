@@ -99,28 +99,17 @@ class GeneralModel:
                 return temp_eqt_returns
             
             elif name == "handmade_features_input":
-                temp_non_return_cols = [col for col in self.non_return_cols if not col in ["kurt_return_date_eqt", 'skew_return_date_eqt','max_drawdown_return_date_eqt']]
+                temp_non_return_cols = [col for col in self.non_return_cols if col in ["avg_return_date_eqt",
+                                                                                       "difference_to_market",
+                                                                                       "return_trend",
+                                                                                       "avg_market_return_eqt",
+                                                                                       "var_market_return_eqt",
+                                                                                       "countd_product",
+                                                                                       "var_market_return_date",
+                                                                                       "countd_date"]]
                 return self.scale(data[temp_non_return_cols].values)
             
-            elif name == 'rolling_ewma_returns' :
-                temp_returns = data[self.return_cols].ewm(halflife = 1.5).mean().values
-                temp_returns = temp_returns.reshape((temp_returns.shape[0],
-                                                     temp_returns.shape[1], 1))
-                return temp_returns
-            
-            elif name == 'rolling_var_returns' : 
-                temp_returns = data.groupby('eqt_code')[self.return_cols]
-                temp_var = temp_returns.std().rolling(11, min_periods= 1, axis = 1).sum()
-                data.set_index(['eqt_code'], inplace=True)
-                self.var_return_cols = [
-                    'var_' + c for c in self.return_cols
-                ]
-                data[self.var_return_cols] = temp_var
-                data.reset_index(inplace=True)
-                temp_var = data[self.var_return_cols].values
-                temp_var = temp_var.reshape(
-                    (temp_var.shape[0], temp_var.shape[1], 1))
-                return temp_var
+
                 
                 
         input_data = [create_input(name, data) for name in self.inputnames]
