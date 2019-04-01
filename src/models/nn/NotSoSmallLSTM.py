@@ -21,7 +21,7 @@ class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
                  eqt_embeddings_size=20,
-                 lstm_out_dim=200,
+                 lstm_out_dim=150,
                  dropout_rate=0.5,
                  dropout_spatial_rate=0.5,
                  dropout_lstm=0.5,
@@ -61,7 +61,7 @@ class NotSoSmallLSTM(GeneralLSTM):
             input_dim=1512,
             input_length=1,
             name='date_embeddings')(date_input)
-        date_emb = Dropout(self.dropout_spatial_rate)(date_emb)
+        date_emb = SpatialDropout1D(self.dropout_spatial_rate)(date_emb)
         date_emb = Reshape((self.eqt_embeddings_size,1))(date_emb)
 
 #        date_emb = Flatten()(date_emb)
@@ -98,30 +98,30 @@ class NotSoSmallLSTM(GeneralLSTM):
         ### Temporal informations
         returns_input = Input(shape=(self.returns_length, 1), name='returns_input')
         
-#        market_returns_input = Input(shape=(self.returns_length, 1), name='market_returns_input')
+        market_returns_input = Input(shape=(self.returns_length, 1), name='market_returns_input')
 #                        
-#        eqt_avg_returns_input = Input(shape=(self.returns_length, 1), name='eqt_avg_returns_input')
-#        
-#        ewma_input = Input(shape=(self.returns_length, 1), name='ewma_rolling_input')
+        eqt_avg_returns_input = Input(shape=(self.returns_length, 1), name='eqt_avg_returns_input')
+#
+ #       ewma_input = Input(shape=(self.returns_length, 1), name='ewma_rolling_input')
 #        
 #        std_input = Input(shape=(self.returns_length, 1), name='var_rolling_input')
 #    
         returns_eqt = concatenate([returns_input, eqt_emb, date_emb], axis = 1)
     
       
-#        market_returns_features = JANET(
-#            self.lstm_out_dim//2,
-#            return_sequences=False,
-#            dropout=self.dropout_lstm,
-#            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
-#            kernel_initializer='random_uniform')(market_returns_input)
+        market_returns_features = JANET(
+            self.lstm_out_dim//2,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+            kernel_initializer='random_uniform')(market_returns_input)
         
-#        eqt_avg_returns_features = JANET(
-#            self.lstm_out_dim//2,
-#            return_sequences=False,
-#            dropout=self.dropout_lstm,
-#            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
-#            kernel_initializer='random_uniform')(eqt_avg_returns_input)
+        eqt_avg_returns_features = JANET(
+            self.lstm_out_dim//2,
+            return_sequences=False,
+            dropout=self.dropout_lstm,
+            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
+            kernel_initializer='random_uniform')(eqt_avg_returns_input)
                         
         returns_features =  JANET(
             self.lstm_out_dim,
@@ -135,8 +135,7 @@ class NotSoSmallLSTM(GeneralLSTM):
  #           return_sequences=False,
  #           dropout=self.dropout_lstm,
  #           recurrent_dropout=self.dropout_lstm_rec, unroll = False,
- #           kernel_initializer='random_uniform')(ewma_input)
-        
+ #           kernel_initializer='random_uniform')(ewma_input)        
  #       var_returns =  JANET(
  #           self.lstm_out_dim,
  #           return_sequences=False,
@@ -159,21 +158,19 @@ class NotSoSmallLSTM(GeneralLSTM):
 #            kernel_initializer='random_uniform')(diference_to_eqt)
         
         
- #       market_features = concatenate([returns_features,
- #                                      eqt_avg_returns_features,
- #                                      market_returns_features,
- #                                      rolling_features,
- #                                      var_returns])
+        market_features = concatenate([returns_features,
+                                       eqt_avg_returns_features,
+                                       market_returns_features])
 
         return_features = Dense(self.lstm_out_dim,activation = 'linear')(returns_features)
         return_features = PReLU()(return_features)
         return_features = Dropout(self.dropout_rate)(return_features)
         return_features = BatchNormalization()(return_features)
         
- #       market_features = Dense(self.lstm_out_dim,activation = 'linear')(market_features)
- #       market_features = PReLU()(market_features)
- #       market_features = Dropout(self.dropout_rate)(market_features)
- #       market_features = BatchNormalization()(market_features)
+        market_features = Dense(self.lstm_out_dim,activation = 'linear')(market_features)
+        market_features = PReLU()(market_features)
+        market_features = Dropout(self.dropout_rate)(market_features)
+        market_features = BatchNormalization()(market_features)
         
         
  #       return_market_features = concatenate([market_features, return_features])
@@ -192,7 +189,7 @@ class NotSoSmallLSTM(GeneralLSTM):
         handmade_features = BatchNormalization()(handmade_features)
         
         ### Final Concatenation
-        x = concatenate([return_features,handmade_features_input])
+        x = concatenate([return_features,market_features,handmade_features_input])
         
         x = Dense(64,activation = 'linear')(x)
         
@@ -217,12 +214,16 @@ class NotSoSmallLSTM(GeneralLSTM):
             inputs=[eqt_code_input,
                     date_input,
                     returns_input,
+                    market_returns_input,
+                    eqt_avg_returns_input,
                     handmade_features_input],
             outputs=[output])
 
         inputs = ["eqt_code_input",
                   "date",
-                  "returns_input", 
+                  "returns_input",
+                  "market_returns_input",
+                  "eqt_avg_returns",
                   "handmade_features_input"
                   ]
         return model, inputs
@@ -235,7 +236,7 @@ if __name__ == '__main__':
     from src.tools.utils import plot_training
 
     KFOLDS = 0
-    EPOCHS = 150
+    EPOCHS = 200
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
