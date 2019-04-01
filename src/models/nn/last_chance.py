@@ -110,7 +110,7 @@ if __name__ == '__main__':
     from src.tools.utils import plot_training
 
     KFOLDS = 0
-    EPOCHS = 200
+    EPOCHS = 500
     
     exp = Experiment(modelname="not_small_janet")
     data = Data(
@@ -129,7 +129,7 @@ if __name__ == '__main__':
         checkpointname=exp.modelname,
         epochs=EPOCHS,
         plateau_patience=5,
-        stop_patience=15,
+        stop_patience=50,
         verbose=1,
         batch_size=8192,
         best = True,
