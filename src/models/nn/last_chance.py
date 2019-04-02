@@ -20,7 +20,7 @@ from src.models.nn.janet import JANET
 class NotSoSmallLSTM(GeneralLSTM):
     def __init__(self,
                  data,
-                 eqt_embeddings_size=20,
+                 eqt_embeddings_size=5,
                  lstm_out_dim=50,
                  dropout_rate=0.5,
                  dropout_spatial_rate=0.5,
@@ -44,16 +44,24 @@ class NotSoSmallLSTM(GeneralLSTM):
 
     def create_model(self):
         
-         
+        eqt_code_input = Input(shape=[1], name='eqt_code_input')
+        eqt_emb = Embedding(output_dim=self.eqt_embeddings_size,
+                            input_dim=self.n_eqt,
+                            input_length=1,
+                            name='eqt_embeddings')(eqt_code_input)
+        eqt_emb = SpatialDropout1D(self.dropout_spatial_rate)(eqt_emb)
+       # eqt_emb = Flatten()(eqt_emb)
+        eqt_emb = Reshape((self.eqt_embeddings_size,1))(eqt_emb)
+               
         ### Temporal informations
         returns_input = Input(shape=(self.returns_length, 1), name='returns_input')
-        
+        return_features = concatenate([eqt_emb,returns_input],axis = 1)
         return_features =  JANET(
             self.lstm_out_dim,
             return_sequences=False,
             dropout=self.dropout_lstm,
-            recurrent_dropout=self.dropout_lstm_rec, unroll = False,
-            kernel_initializer='random_uniform')(returns_input)
+            recurrent_dropout=self.dropout_lstm_rec, unroll = True,
+            kernel_initializer='random_uniform')(return_features)
         
         return_features = Dense(32,activation = 'linear')(return_features)
         return_features = PReLU()(return_features)
@@ -92,12 +100,13 @@ class NotSoSmallLSTM(GeneralLSTM):
 
         
         model = Model(
-            inputs =[
+            inputs =[eqt_code_input,
                     returns_input,
                     handmade_features_input],
             outputs=[output])
 
-        inputs = ["returns_input",
+        inputs = ["eqt_code_input",
+                  "returns_input",
                   "handmade_features_input"
                   ]
         return model, inputs
