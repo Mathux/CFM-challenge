@@ -138,7 +138,7 @@ if __name__ == '__main__':
         checkpointname=exp.modelname,
         epochs=EPOCHS,
         plateau_patience=5,
-        stop_patience=50,
+        stop_patience=20,
         verbose=1,
         batch_size=8192,
         best = True,
